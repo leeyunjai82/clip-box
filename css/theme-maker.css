@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════════
+   더 메이커 공통 테마 — vapi-od(온디바이스 비전툴)와 같은 결
+   ═══════════════════════════════════════════════════════════
+   두 서비스가 한 제품으로 보이도록 톤을 맞춘다.
+   바꾸는 것은 둘뿐이다: 색 토큰(전체 배경) · 헤더 외곽선.
+   기능·레이아웃·버튼 이름은 건드리지 않는다.
+
+   style.css 뒤에 불러야 한다 (뒤에 온 값이 이긴다).
+   되돌리려면 각 HTML 에서 이 파일 <link> 한 줄만 지우면 된다. */
+
+/* ── 색 토큰 : "학습지" (미색 종이 + 갈색 괘선 + 남색 펜) ── */
+:root {
+  --paper:      #FBF7EF;   /* 활동지 바탕 */
+  --line-d:     #4A3F2E;   /* 표 괘선 (짙은 갈색) */
+  --pen-blue:   #1F5F7A;
+  --pen-blue-d: #12455C;
+  --pen-red:    #B4451C;
+
+  /* 파이보 랩이 쓰던 이름에 학습지 색을 다시 붙인다 */
+  --bg:        var(--paper);
+  --panel:     #FFFFFF;
+  --panel2:    #FBFAF5;
+  --line:      #9A8F7D;
+  --line-soft: #DCD5C6;
+  --ink:       #2A2620;
+  --ink2:      #4A423A;
+  --ink3:      #6B6255;
+  --acc:       var(--pen-blue);
+  --acc-ink:   var(--pen-blue-d);
+  --acc-deep:  #FFFFFF;
+  --acc-soft:  #E6EEF6;
+  --ok:        #2E7D4F;
+  --warn:      var(--pen-red);
+
+  --r-s: 6px;
+  --r-m: 6px;
+  --shadow: 0 1px 0 rgba(44, 74, 124, .18);
+  /* 글자체는 vapi-od 의 고운돋움/고운바탕을 먼저 찾고, 없으면 기존 것을 쓴다.
+     폰트 파일(약 4.2MB)을 넣지 않아도 색·테두리만으로 톤은 맞는다.
+     완전히 맞추려면 vapi-od/view_project/fonts/ 를 pibo-lab/fonts/ 로 복사하고
+     각 HTML 에 <link rel="stylesheet" href="fonts/fonts.css"> 를 넣으면 이 값이 그대로 살아난다. */
+  --sans: 'Gowun Dodum', 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Gowun Batang', 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+}
+
+/* ── 전체 배경 : 미색 종이에 옅은 점무늬 ── */
+body {
+  /* 헤더 상자가 위·좌우로 8px 떠 있는 만큼 아래도 맞춰 준다 */
+  padding-bottom: 8px;
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(31, 95, 122, .07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* ── 헤더 ──
+   다른 세 페이지(#devTop·#gTop·#cfTop)는 각자 <style> 안에서 헤더를 정의하는데,
+   그 <style> 이 이 파일보다 뒤에 와서 여기 규칙을 덮어쓴다.
+   그래서 넷이 어긋나지 않도록 선택자 앞에 html body 를 붙여 우선순위를 올리고,
+   네 페이지 모두 같은 값으로 통일한다. */
+html body header,
+html body #devTop,
+html body #gTop,
+html body #cfTop {
+  background: #FFFFFF;
+  border: 2px solid var(--line-d);      /* vapi-od 머리표와 같은 외곽선 */
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(44, 74, 124, .18);
+  margin: 8px 8px 0;
+  padding: 0 12px;
+  height: 54px;
+}
+
+/* 서비스명은 명조로 — vapi-od 머리표와 같은 글자체 */
+html body header h1,
+html body #devTop .title,
+html body #cfTop .title,
+html body #gTop .title {
+  font-family: var(--serif);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* ── 탭 버튼 : 테두리 없는 밑줄 탭 ──
+   알약처럼 외곽선을 두르지 않고, 선택된 탭만 아래에 남색 줄을 긋는다. */
+html body .navlink {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: var(--ink2);
+  padding: 6px 12px 4px;
+  font-weight: 400;
+}
+html body .navlink:hover {
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: #CFC7B8;
+  color: var(--ink);
+}
+html body .navlink.on,
+html body .navlink[aria-current] {
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--pen-blue);
+  color: var(--pen-blue-d);
+  font-weight: 700;
+}
+
+/* ── 자잘한 마감 ── */
+/* 상단 상태 배지도 종이 톤으로 */
+.badge {
+  border-color: var(--line-soft);
+  background: var(--panel2);
+}
+.badge.ok {
+  color: var(--ok);
+  background: #EEF5EF;
+  border-color: #C9DCCB;
+}
