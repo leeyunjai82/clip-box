@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>업무 도구 킷 — 컴포넌트 미리보기</title>
+<link rel="icon" type="image/svg+xml" href="../assets/img/clip-box-mark.svg">
+<link rel="stylesheet" href="../assets/fonts/pretendard.css">
+<link rel="stylesheet" href="../css/all.min.css">
+<link rel="stylesheet" href="../css/maker-tool.css">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  body{height:auto;overflow:auto}
+  .mk-main{flex-direction:column}
+  .pan{width:100%!important}
+  .sw{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .chip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink3);font-weight:700}
+  .chip b{display:block;width:34px;height:22px;border-radius:5px;border:1px solid var(--line)}
+  .note{font-size:11px;color:var(--ink3);margin:2px 0 10px}
+  .markrow{display:flex;gap:16px;flex-wrap:wrap}
+  .markrow figure{text-align:center}
+  .markrow img{width:64px;height:64px;display:block}
+  .markrow figcaption{font-size:11px;color:var(--ink3);font-weight:700;margin-top:6px}
+  .marksizes{display:flex;align-items:flex-end;gap:8px;background:var(--panel2);
+    border:1px solid var(--line-soft);border-radius:var(--r-m);padding:12px}
+  .marksizes span{font-size:10px;color:var(--ink3);font-weight:700;margin-right:10px}
+</style>
+</head>
+<body>
+
+<header data-tab="preview.html">
+  <h1><img src="../assets/img/clip-box-mark.svg" alt=""><span class="brand-txt">clip-box</span></h1>
+  <span class="brand-sub">업무 도구 킷 · 컴포넌트 미리보기</span>
+  <span style="flex:1"></span>
+  <span class="badge ok">준비 완료</span>
+  <button class="hbtn" type="button"><i class="fa-solid fa-expand"></i></button>
+  <button id="langToggle" type="button">EN</button>
+</header>
+
+<nav class="tabbar">
+  <button class="tab done"><span class="n">1</span>끝난 작업</button>
+  <button class="tab on"><span class="n">2</span>지금 작업</button>
+  <button class="tab"><span class="n">3</span>앞으로 할 작업</button>
+</nav>
+
+<div class="mk-main">
+
+  <section class="pan">
+    <div class="ph"><i class="fa-solid fa-palette"></i>색 토큰<span class="ph-count num">14</span></div>
+    <div class="pb">
+      <p class="note">새 색을 만들지 않습니다. 아래 토큰만 씁니다.</p>
+      <div class="sw">
+        <span class="chip"><b style="background:var(--bg)"></b>--bg</span>
+        <span class="chip"><b style="background:var(--panel)"></b>--panel</span>
+        <span class="chip"><b style="background:var(--panel2)"></b>--panel2</span>
+        <span class="chip"><b style="background:var(--line-soft)"></b>--line-soft</span>
+        <span class="chip"><b style="background:var(--line)"></b>--line</span>
+        <span class="chip"><b style="background:var(--line-d)"></b>--line-d</span>
+        <span class="chip"><b style="background:var(--ink)"></b>--ink</span>
+        <span class="chip"><b style="background:var(--ink2)"></b>--ink2</span>
+        <span class="chip"><b style="background:var(--ink3)"></b>--ink3</span>
+        <span class="chip"><b style="background:var(--acc)"></b>--acc</span>
+        <span class="chip"><b style="background:var(--acc-ink)"></b>--acc-ink</span>
+        <span class="chip"><b style="background:var(--acc-soft)"></b>--acc-soft</span>
+        <span class="chip"><b style="background:var(--ok)"></b>--ok</span>
+        <span class="chip"><b style="background:var(--warn)"></b>--warn</span>
+      </div>
+      <p class="note">교육용 킷(sense-lab)과 <b>이름은 같고 값만 다릅니다.</b>
+        브랜드 남색 <code>--acc #1F5F7A</code> 는 두 킷이 같은 값을 씁니다.</p>
+    </div>
+  </section>
+
+  <section class="pan">
+    <div class="ph"><i class="fa-solid fa-shapes"></i>서비스 마크</div>
+    <div class="pb">
+      <p class="note">바탕 사각형과 흰 판은 고정, 글리프만 서비스마다 다릅니다. 색은 남색 하나(보조 톤은 opacity .38).</p>
+      <div class="markrow">
+        <figure><img src="mark/snap-box-mark.svg" alt=""><figcaption>snap-box</figcaption></figure>
+        <figure><img src="mark/clip-box-mark.svg" alt=""><figcaption>clip-box</figcaption></figure>
+      </div>
+      <div class="st" style="margin-top:12px">작은 크기에서 형태가 남는지</div>
+      <div class="marksizes">
+        <img src="../assets/img/clip-box-mark.svg" style="height:16px" alt=""><span>16</span>
+        <img src="../assets/img/clip-box-mark.svg" style="height:26px" alt=""><span>26</span>
+        <img src="../assets/img/clip-box-mark.svg" style="height:40px" alt=""><span>40</span>
+        <img src="../assets/img/clip-box-mark.svg" style="height:64px" alt=""><span>64</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="pan">
+    <div class="ph"><i class="fa-solid fa-hand-pointer"></i>버튼 · 입력</div>
+    <div class="pb">
+      <p class="note">.db 기본 / .go 주 동작 / .on 눌림 / .warn 강한 경고 / .danger 조용한 지우기</p>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="db">기본</button>
+        <button class="db go"><i class="fa-solid fa-check"></i>적용</button>
+        <button class="db on"><i class="fa-solid fa-vector-square"></i>눌림</button>
+        <button class="db warn">강한 경고</button>
+        <button class="db danger"><i class="fa-solid fa-trash-can"></i>지우기</button>
+        <button class="db" disabled>잠김</button>
+      </div>
+
+      <div class="sec2">
+        <div class="st">.pickrow — 하나 고르기</div>
+        <div class="pickrow">
+          <button class="db on">GIF</button>
+          <button class="db">WebP</button>
+          <button class="db">MP4</button>
+        </div>
+
+        <div class="st">.rangerow — 라벨 + 슬라이더 + 숫자</div>
+        <div class="rangerow">
+          <label for="pv1">프레임</label>
+          <input type="range" id="pv1" min="4" max="30" value="10">
+          <output class="num">10</output>
+        </div>
+
+        <div class="st">.fieldrow — 라벨 + 입력칸 + 단위</div>
+        <div class="fieldrow"><label for="pv2">가로</label>
+          <input class="inp" type="number" id="pv2" value="480"><span class="unit">px</span></div>
+
+        <div class="st">.minirow — 작은 입력 여러 개</div>
+        <div class="row minirow">
+          <label class="mini">목표 용량<input class="inp" type="number" value="5"></label>
+          <label class="mini">글자 크기<input class="inp" type="number" value="24"></label>
+          <label class="mini">여백<input class="inp" type="number" value="16"></label>
+        </div>
+
+        <div class="st">.filebtn — 파일 고르기</div>
+        <label class="db filebtn" for="pv3"><i class="fa-solid fa-image"></i>로고 PNG 고르기</label>
+        <input type="file" id="pv3">
+        <label class="db filebtn off" for="pv4" style="margin-top:6px"><i class="fa-solid fa-image"></i>잠긴 상태 (.off)</label>
+        <input type="file" id="pv4">
+      </div>
+    </div>
+  </section>
+
+  <section class="pan">
+    <div class="ph"><i class="fa-solid fa-list"></i>목록 · 요약 · 진행률</div>
+    <div class="pb">
+      <div class="st">.dropzone (.slim = 목록이 있을 때)</div>
+      <div class="dropzone"><i class="fa-solid fa-plus"></i><br>영상을 여기에 놓거나 눌러서 고릅니다</div>
+      <div class="dropzone slim" style="margin-top:8px"><i class="fa-solid fa-plus"></i>영상을 여기에 놓거나 눌러서 고릅니다</div>
+
+      <div class="sec2">
+        <div class="st">.qitem — 썸네일 목록</div>
+        <div id="pvList"></div>
+      </div>
+
+      <div class="sec2">
+        <div class="st">.summary — 지금 설정</div>
+        <div class="summary">
+          <div class="srow"><span class="sk">시작</span><span class="sv num">0:01.4</span></div>
+          <div class="srow"><span class="sk">끝</span><span class="sv num">0:04.8</span></div>
+          <div class="srow"><span class="sk">길이</span><span class="sv num">3.4초</span></div>
+          <div class="srow"><span class="sk">예상</span><span class="sv num">≈ 1.2 MB · 480×854</span></div>
+        </div>
+        <div class="st" style="margin-top:12px">.namepv — 결과 미리보기</div>
+        <div class="namepv mono">port_1.4-4.8.gif</div>
+      </div>
+
+      <div class="sec2">
+        <div class="st">.prg — 진행률</div>
+        <div class="prg">
+          <div class="lb"><span>색을 고르는 중입니다</span><span class="num">2 / 5</span></div>
+          <div class="track"><div class="fill" style="width:40%"></div></div>
+        </div>
+      </div>
+
+      <div class="sec2">
+        <div class="st">.hint — 도움말 한 줄</div>
+        <div class="hint">아래 필름에서 손잡이를 끌거나, 재생 중에 I·O 키로 잡습니다.</div>
+      </div>
+    </div>
+    <div class="pf">
+      <button class="db danger"><i class="fa-solid fa-trash-can"></i>고른 것 빼기</button>
+      <button class="db danger">모두 비우기</button>
+    </div>
+  </section>
+</div>
+
+<div class="mk-bar">
+  <button class="db"><i class="fa-solid fa-play"></i></button>
+  <span class="num">0:01.4 / 0:08.0</span>
+  <span class="bar-div"></span>
+  <button class="db go"><i class="fa-solid fa-bolt"></i>이 구간 굽기</button>
+  <button class="db"><i class="fa-solid fa-plus"></i>구간 담기</button>
+  <button class="db"><i class="fa-solid fa-layer-group"></i>목록 전체 굽기</button>
+  <button class="db warn"><i class="fa-solid fa-stop"></i>그만두기</button>
+  <span class="bar-sp"></span>
+  <div class="prg" style="width:230px">
+    <div class="lb"><span>색을 고르는 중입니다</span><span class="num">40%</span></div>
+    <div class="track"><div class="fill" style="width:40%"></div></div>
+  </div>
+</div>
+
+<!-- 토스트는 실제로는 화면 아래 고정이지만, 이 장에서는 내용을 가리지 않게 제자리에 둔다 -->
+<section class="pan" style="margin:0 10px 10px">
+  <div class="ph"><i class="fa-solid fa-comment"></i>토스트</div>
+  <div class="pb">
+    <p class="note">화면 가운데 아래에 뜨고 2.4초 뒤 사라집니다. 아래 작업 줄을 가리지 않게 한 단 위에 뜹니다.</p>
+    <div class="toast on" style="position:static;transform:none;display:inline-block;max-width:none">처리했습니다</div>
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────────
+     여기부터는 clip-box 전용입니다 (css/app.css). 킷에는 넣지 않습니다.
+     design/README.md §8-7 — 새 컴포넌트는 여기에 먼저 올립니다.
+     ───────────────────────────────────────────────────────────── -->
+<section class="pan" style="margin:0 10px 10px">
+  <div class="ph"><i class="fa-solid fa-film"></i>clip-box 전용<span class="ph-count num">3</span></div>
+  <div class="pb">
+    <p class="note">킷을 고치지 않고 <code>css/app.css</code> 에만 둡니다. 색은 킷 토큰만 씁니다.</p>
+
+    <div class="st">#timeline — 필름 · 구간 손잡이 · 눈금</div>
+    <div style="background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-m);padding:9px 11px 6px">
+      <div id="timeline">
+        <div id="tlTrack">
+          <div class="tl-dim" style="left:0;width:22%"></div>
+          <div class="tl-dim" style="left:62%;right:0"></div>
+          <div id="tlSel" style="left:22%;width:40%"></div>
+          <div class="tl-hand" style="left:22%"><i></i></div>
+          <div class="tl-hand" style="left:62%"><i></i></div>
+          <div id="tlHead" style="left:34%"></div>
+        </div>
+        <div id="tlRuler">
+          <span class="tk edge" style="left:0">0:00.0</span>
+          <span class="tk" style="left:25%">0:02.0</span>
+          <span class="tk" style="left:50%">0:04.0</span>
+          <span class="tk" style="left:75%">0:06.0</span>
+          <span class="tk edge r" style="left:100%">0:08.0</span>
+        </div>
+        <div id="tlTip" style="left:34%">0:02.7</div>
+      </div>
+    </div>
+    <div class="hint">바탕에는 썸네일을 그린 캔버스(<code>#tlThumbs</code>)가 깔립니다. 구간 밖은 어둡게 덮습니다.</div>
+
+    <div class="sec2">
+      <div class="st">#cropBox — 비율을 고정한 잘라내기 칸</div>
+      <div style="position:relative;height:150px;background:var(--ink);border-radius:var(--r-m);overflow:hidden">
+        <div id="cropBox" style="left:26%;top:12%;width:48%;height:76%">
+          <span class="cropsz num">504 × 504</span>
+          <span class="ch nw"></span><span class="ch n"></span><span class="ch ne"></span>
+          <span class="ch w"></span><span class="ch e"></span>
+          <span class="ch sw"></span><span class="ch s"></span><span class="ch se"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec2">
+      <div class="st">.res — 구운 결과 카드</div>
+      <div class="res">
+        <div class="rv" style="height:120px"></div>
+        <div class="rf">
+          <div class="rn">port_1.4-4.8.gif</div>
+          <div class="rm">1.22 MB · 480×854 · 10fps · 3.4초</div>
+          <div class="row" style="margin-top:7px">
+            <button class="db go" style="flex:1;justify-content:center"><i class="fa-solid fa-download"></i>내려받기</button>
+            <button class="db danger"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="../js/i18n.js"></script>
+<script>
+(function () {
+  var rows = [['0:00.6 → 0:03.2', '2.6초'], ['0:04.0 → 0:06.4', '2.4초'], ['0:06.8 → 0:08.0', '1.2초']];
+  var box = document.getElementById('pvList');
+  rows.forEach(function (r, i) {
+    var d = document.createElement('div');
+    d.className = 'qitem' + (i === 0 ? ' on' : '');
+    d.innerHTML = '<input type="checkbox"><span class="idx num">' + (i + 1) + '</span>' +
+      '<span class="th"></span><div class="meta"><div class="nm num">' + r[0] + '</div>' +
+      '<div class="mt">' + r[1] + '</div></div>';
+    box.appendChild(d);
+  });
+})();
+</script>
+</body>
+</html>
