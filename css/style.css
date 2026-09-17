@@ -11,29 +11,19 @@
    --w-queue 를 240px 로 넓혔다가 되돌렸다. 영상 정보를 이름/값 두 칸(dl)으로
    짜 놓으면 210px 에서도 줄바꿈이 없다 (실측: 넘치는 요소 0개). */
 
-/* ── 왼쪽: 영상 정보 카드 ── */
-/* 영상을 이미 불러왔으면 드롭존은 자리를 비켜 준다.
-   clip-box 는 한 번에 영상 하나만 다루므로 큰 드롭존이 계속 있을 이유가 없다. */
-#dropZone.compact{padding:8px;margin:8px 10px}
-#dropZone.compact p{display:none}
-#fileCard{padding:0 10px 10px}
-#fileCard #btnChange{width:100%;margin-top:8px}
-#fileName{font-size:12px;font-weight:600;margin-bottom:6px}
-#fileMeta{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:0}
-#fileMeta dt{font-size:11px;color:var(--dim)}
-#fileMeta dd{margin:0;font-size:11px;text-align:right}
+/* ── 왼쪽: 영상 정보 ──
+   공용 부품(.grp / .grp-title / .row)을 그대로 쓴다. 자리와 값 정렬만 잡는다.
+   파일 이름은 여기 두지 않는다 — snap-box 와 같이 #stageHead 에 한 번만 보인다. */
+#fileCard{margin:0 10px 10px}
+#fileCard .row>span:last-child{margin-left:auto;font-size:11px}
 .warn-hint{color:var(--warn)}
 #queueHint{padding:0 10px}
 
-/* ── 왼쪽: 클립 목록 ── */
-#queueList li .no{
-  width:20px;height:20px;border-radius:50%;background:var(--line);color:var(--fg);
-  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;
-}
-#queueList li.active .no{background:var(--accent);color:#fff}
-#queueList .rg{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
-#queueList .x{background:none;border:0;color:var(--dim);cursor:pointer;padding:2px 4px;font-size:14px;line-height:1;flex:none}
-#queueList .x:hover{color:var(--danger)}
+/* ── 왼쪽: 클립 목록 ──
+   항목 구성을 snap-box 와 똑같이 [체크박스][썸네일 46x46][이름/상태] 로 둔다.
+   썸네일·간격·색은 base.css 의 #queueList 규칙이 그대로 맡는다.
+   여기서는 시각 표기가 줄바꿈되지 않게만 잡아 준다. */
+#queueList .rg{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* ── 가운데: 플레이어 ── */
 #videoBox{position:relative;display:none;line-height:0}
@@ -98,7 +88,7 @@
   content:'';position:absolute;left:2px;top:50%;margin-top:-5px;width:2px;height:10px;
   border-left:1px solid rgba(255,255,255,.85);border-right:1px solid rgba(255,255,255,.85);
 }
-.tl-hand:hover i{background:#3b7cf7}
+.tl-hand:hover i{filter:brightness(1.18)}
 #tlHead{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--danger);pointer-events:none;z-index:4}
 
 /* 시간 눈금 — 어디가 몇 초인지 알 수 있어야 구간을 잡는다 */
@@ -119,25 +109,14 @@
 #rangeInfo b{font-weight:700}
 .accent-txt{color:var(--accent)}
 
-/* ── 오른쪽: 프리셋 카드 ── */
-.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
-.pbtn{
-  background:#141922;border:1px solid var(--line);border-radius:6px;padding:7px 8px;
-  cursor:pointer;text-align:left;transition:.12s;display:flex;flex-direction:column;gap:2px;
-}
-.pbtn:hover{border-color:var(--dim)}
-.pbtn.active{border-color:var(--accent);background:rgba(47,111,235,.16)}
-.pbtn b{font-size:12px;font-weight:600}
-.pbtn span{font-size:10px;color:var(--dim);line-height:1.35}
-
 /* ── 오른쪽: 로고 미리보기 ── */
 .logorow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.logorow img{width:30px;height:30px;object-fit:contain;background:#141922;border:1px solid var(--line);border-radius:5px;flex:none}
+.logorow img{width:30px;height:30px;object-fit:contain;background:var(--bg);border:1px solid var(--line);border-radius:5px;flex:none}
 .logorow span{flex:1;min-width:0;font-size:11px;color:var(--dim)}
 
 /* ── 오른쪽: 결과 카드 ── */
 .res{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;background:var(--pane2)}
-.res .rv{background:#0d1016;display:flex;align-items:center;justify-content:center;min-height:70px}
+.res .rv{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:70px}
 .res .rv img,.res .rv video{max-width:100%;max-height:200px;display:block}
 .res .rf{padding:8px 9px}
 .res .rn{font-size:11px;font-weight:600;word-break:break-all;line-height:1.4}

@@ -181,10 +181,15 @@ clip-box/
 |---|---|
 | 색·크기 토큰 14개 | 전부 일치 |
 | 공통 부품 계산된 스타일 39종 | 전부 일치 |
+| 찍힌 픽셀 (헤더 높이·색, 패널 폭, 무대 배경) | 전부 일치 |
 | `base.css` ↔ snap-box `style.css` 공통 선택자 92개 | 값 전부 일치 |
 | 동봉 웹폰트 | 둘 다 0개 |
 
-![snap-box / clip-box 빈 화면](docs/screenshot-empty.png)
+![clip-box 빈 화면](docs/screenshot-empty.png)
+
+> **화면이 흰색으로 보이거나 글자가 커 보이면** 브라우저에 옛 `index.html` 이
+> 남아 있는 것입니다. **하드 리프레시**(Ctrl+Shift+R / Mac 은 Cmd+Shift+R) 한 번이면
+> 됩니다. 지금은 그 상황을 스스로 알아채고 한 번만 다시 불러오도록 해 두었습니다.
 
 ---
 

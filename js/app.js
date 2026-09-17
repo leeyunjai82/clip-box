@@ -8,12 +8,23 @@
 // 화면 규약은 docs/DESIGN.md — 알림은 toast / busy / progress 셋뿐이고
 // alert()·confirm() 은 쓰지 않는다.
 
+// ── 옛 화면이 캐시에 남아 있을 때의 자가 복구 ──────────────────────────
+// 2026-09 에 index.html 이 부르는 CSS 가 통째로 바뀌었다(ui.css·theme-maker.css
+// → base.css). 브라우저가 옛 index.html 을 캐시에서 꺼내 쓰면 지운 CSS 가 404 가
+// 나면서 색·글자 크기·헤더 높이가 전부 기본값으로 떨어진다(흰 화면).
+// GitHub Pages 는 Cache-Control 을 못 건드리므로, 짝이 안 맞는 것을 스스로 알아채고
+// 주소에 값을 붙여 캐시를 비켜 한 번만 다시 불러온다.
+// (?v= 가 이미 붙어 있으면 다시 하지 않으므로 무한 새로고침이 되지 않는다)
+if (!document.getElementById('topbar') && !/[?&]v=/.test(location.search)) {
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+
 import { t, apply as applyI18n, getLang, setLang } from './i18n.js';
 import * as P from './presets.js';
 import * as F from './ffmpeg.js';
 import {
   TL, initTimeline, setVideo, clearVideo, setRange, setIn, setOut, seekTo,
-  setCropEnabled, clearCrop, setRatio, cropForEncode, applyCrop, grabStill,
+  setCropEnabled, clearCrop, setRatio, cropForEncode, applyCrop, grabStill, grabThumb,
   togglePlay, pause, setLoop, layout, redrawThumbsSoon, fmtTime, fmtBytes,
 } from './timeline.js';
 
@@ -173,7 +184,6 @@ function wireTopbar() {
 function wireFile() {
   const input = $('#fileInput');
   $('#btnPick').addEventListener('click', () => input.click());
-  $('#btnChange').addEventListener('click', () => input.click());
   input.addEventListener('change', () => {
     if (input.files[0]) openFile(input.files[0]);
     input.value = '';
@@ -230,7 +240,6 @@ async function openFile(file) {
       toast(t('msg.badVideo'), 'err');
       clearVideo();
       $('#fileCard').hidden = true;
-      $('#dropZone').classList.remove('compact');
       $('#stageName').textContent = t('stage.empty');
       $('#stageDims').textContent = '';
       S.file = null;
@@ -239,11 +248,7 @@ async function openFile(file) {
     }
   }
 
-  // 영상을 불러왔으니 드롭존은 한 줄로 줄인다 (왼쪽 패널은 큐가 더 중요하다)
-  $('#dropZone').classList.add('compact');
   $('#fileCard').hidden = false;
-  $('#fileName').textContent = file.name;
-  $('#fileName').title = file.name;
   $('#fileDur').textContent = fmtTime(meta.duration);
   $('#fileDims').textContent = meta.w + '×' + meta.h;
   $('#fileBytes').textContent = fmtBytes(file.size);
@@ -335,23 +340,28 @@ function buildDitherOptions() {
   });
 }
 
+/**
+ * 프리셋은 '서로 배타적인 선택' 이므로 세그먼트(.seg)로 그린다.
+ * snap-box 의 `가림 모드` 와 같은 부품이다 (docs/DESIGN.md §5).
+ * 고른 프리셋의 값은 바로 아래 .hint 한 줄로 보여 준다.
+ */
 function buildPresets() {
-  const box = $('#presetGrid');
+  const box = $('#presetSeg');
   box.innerHTML = '';
   S.presets.forEach(p => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'pbtn' + (p.id === S.st.presetId ? ' active' : '');
-    b.dataset.id = p.id;
-    const name = document.createElement('b');
-    name.textContent = P.presetName(p, getLang());
-    const desc = document.createElement('span');
-    desc.textContent = P.describe(p);
-    b.appendChild(name);
-    b.appendChild(desc);
-    b.addEventListener('click', () => pickPreset(p.id));
+    b.className = 'seg-b' + (p.id === S.st.presetId ? ' active' : '');
+    b.dataset.v = p.id;
+    b.textContent = P.presetName(p, getLang());
     box.appendChild(b);
   });
+  paintPresetHint();
+}
+
+function paintPresetHint() {
+  const p = S.presets.find(x => x.id === S.st.presetId);
+  $('#presetHint').textContent = p ? P.describe(p) : '';
 }
 
 function pickPreset(id) {
@@ -362,11 +372,13 @@ function pickPreset(id) {
   // 목표 용량이 박힌 프리셋(카톡)은 '목표 용량 맞추기' 를 같이 켠다
   if (p.maxBytes > 0) { S.st.fitToSize = true; S.st.targetMB = p.maxBytes / 1024 / 1024; }
   P.saveSettings(S.st);
-  $$('#presetGrid .pbtn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  segSet('presetSeg', id);
+  paintPresetHint();
   applyUI();
 }
 
 function wireOutputTab() {
+  seg('presetSeg', v => pickPreset(v));
   seg('formatSeg', v => { S.cur.format = v; applyUI(); });
   slider('optWidth', v => { S.cur.width = v; updateEstimate(); });
   slider('optFps', v => { S.cur.fps = v; updateEstimate(); });
@@ -618,6 +630,7 @@ function addClip() {
     speed: SPEEDS[c.speedIdx == null ? SPEEDS.indexOf(1) : c.speedIdx],
     loop: c.loop || 'normal',
     checked: false,
+    thumb: grabThumb(46),     // 지금 보이는 프레임 (구간 손잡이가 여기로 옮겨 놨다)
   };
   // 같은 구간을 두 번 담으면 같은 파일이 두 개 나온다 — 미리 막는다
   const dupe = S.clips.find(x => sameClip(x, clip));
@@ -654,7 +667,7 @@ function renderClips() {
   $('#queueCount').textContent = S.clips.length;
   $('#queueHint').hidden = S.clips.length > 0;
 
-  S.clips.forEach((c, i) => {
+  S.clips.forEach((c) => {
     const li = document.createElement('li');
     li.className = (S.activeClip === c.id ? 'active' : '');
 
@@ -664,9 +677,13 @@ function renderClips() {
     chk.addEventListener('click', (e) => e.stopPropagation());
     chk.addEventListener('change', () => { c.checked = chk.checked; });
 
-    const no = document.createElement('span');
-    no.className = 'no';
-    no.textContent = String(i + 1);
+    // 구간 첫 프레임 썸네일 — 어떤 구간인지 글자보다 그림이 빠르다
+    let thumb = null;
+    if (c.thumb) {
+      thumb = document.createElement('img');
+      thumb.src = c.thumb;
+      thumb.alt = '';
+    }
 
     const meta = document.createElement('div');
     meta.className = 'meta';
@@ -684,21 +701,9 @@ function renderClips() {
     meta.appendChild(rg);
     meta.appendChild(st);
 
-    const x = document.createElement('button');
-    x.className = 'x';
-    x.innerHTML = '&times;';
-    x.title = t('queue.removeSel');
-    x.addEventListener('click', (e) => {
-      e.stopPropagation();
-      S.clips = S.clips.filter(v => v.id !== c.id);
-      if (S.activeClip === c.id) S.activeClip = null;
-      renderClips();
-    });
-
     li.appendChild(chk);
-    li.appendChild(no);
+    if (thumb) li.appendChild(thumb);
     li.appendChild(meta);
-    li.appendChild(x);
     li.addEventListener('click', () => loadClip(c));
     box.appendChild(li);
   });

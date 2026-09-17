@@ -7,6 +7,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Crect x='7' y='10' width='13' height='12' rx='2' fill='%23fff'/%3E%3Cpath d='M22 12.5 26 10v12l-4-2.5z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/base.css?v=2">
 <link rel="stylesheet" href="css/style.css?v=2">
+<!-- CSS 가 못 오더라도 눈부신 흰 화면이 되지 않게 하는 최소값.
+     두 값은 base.css 의 --bg / --fg 와 같아야 한다. -->
+<style>html,body{background:#12151b;color:#e6ebf2}</style>
 </head>
 <body>
 
@@ -39,16 +42,13 @@
       <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden>
     </div>
 
-    <div id="fileCard" hidden>
-      <div id="fileName" class="ellip"></div>
-      <dl id="fileMeta">
-        <dt data-i18n="file.length"></dt><dd id="fileDur" class="num">—</dd>
-        <dt data-i18n="file.size"></dt><dd id="fileDims" class="num">—</dd>
-        <dt data-i18n="file.bytes"></dt><dd id="fileBytes" class="num">—</dd>
-      </dl>
+    <div class="grp" id="fileCard" hidden>
+      <div class="grp-title" data-i18n="file.title"></div>
+      <div class="row"><span data-i18n="file.length"></span><span id="fileDur" class="num">—</span></div>
+      <div class="row"><span data-i18n="file.size"></span><span id="fileDims" class="num">—</span></div>
+      <div class="row"><span data-i18n="file.bytes"></span><span id="fileBytes" class="num">—</span></div>
       <p id="proxyNote" class="hint" data-i18n="file.proxy" hidden></p>
       <p id="bigNote" class="hint warn-hint" data-i18n="file.big" hidden></p>
-      <button id="btnChange" class="btn tiny ghost" data-i18n="queue.change"></button>
     </div>
 
     <p id="queueHint" class="hint" data-i18n="queue.hint"></p>
@@ -134,7 +134,8 @@
     <div class="tabbody" id="tab-out">
       <div class="grp">
         <div class="grp-title" data-i18n="out.preset"></div>
-        <div id="presetGrid" class="presets"></div>
+        <div class="seg" id="presetSeg"></div>
+        <p class="hint" id="presetHint"></p>
         <div class="row">
           <button id="btnPresetSave" class="btn tiny" data-i18n="out.presetSave"></button>
           <button id="btnPresetReset" class="btn tiny ghost" data-i18n="out.presetReset"></button>

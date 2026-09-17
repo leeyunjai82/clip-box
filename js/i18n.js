@@ -25,6 +25,7 @@ const ko = {
   'queue.added': '구간을 큐에 담았습니다. ({n}개)',
   'queue.cleared': '큐를 비웠습니다.',
 
+  'file.title': '영상',
   'file.length': '길이',
   'file.size': '크기',
   'file.bytes': '용량',
@@ -169,6 +170,7 @@ const en = {
   'queue.added': 'Range added to the queue. ({n})',
   'queue.cleared': 'Queue cleared.',
 
+  'file.title': 'Video',
   'file.length': 'Length',
   'file.size': 'Size',
   'file.bytes': 'File size',

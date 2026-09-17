@@ -590,6 +590,26 @@ function wireKeys() {
   });
 }
 
+/**
+ * 큐 목록에 붙일 작은 썸네일 (정사각 cover, data URL).
+ * 지금 <video> 에 보이는 프레임을 그대로 쓴다.
+ */
+export function grabThumb(size) {
+  const v = TL.vid;
+  if (!v || !v.src || !v.videoWidth) return null;
+  const n = size || 46;
+  const cv = document.createElement('canvas');
+  cv.width = n; cv.height = n;
+  const ctx = cv.getContext('2d');
+  const side = Math.min(v.videoWidth, v.videoHeight);
+  const sx = (v.videoWidth - side) / 2;
+  const sy = (v.videoHeight - side) / 2;
+  try {
+    ctx.drawImage(v, sx, sy, side, side, 0, 0, n, n);
+    return cv.toDataURL('image/jpeg', 0.7);
+  } catch (e) { return null; }
+}
+
 /** 현재 프레임을 캔버스로 (스틸 컷 저장용) */
 export function grabStill() {
   const v = TL.vid;
