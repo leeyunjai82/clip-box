@@ -1,0 +1,165 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   style.css — clip-box 고유 스타일
+   ═══════════════════════════════════════════════════════════════════════
+   공용 껍데기는 css/base.css (snap-box 와 같은 것). 여기는 clip-box 에만
+   있는 화면 — 플레이어, 타임라인, 크롭 박스, 프리셋 카드, 결과 카드 — 만 둔다.
+   색은 base.css 의 토큰만 쓴다. 새 색상값을 여기에 적지 않는다.
+   자세한 규칙은 docs/DESIGN.md.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 왼쪽 패널만 30px 넓혔다.
+   snap-box 의 큐는 썸네일 + 파일명 한 줄이면 되지만, clip-box 는 영상 정보
+   (길이 · 크기 · 용량)를 이름/값 두 칸으로 보여 줘야 해서 210px 로는 값이 줄바꿈된다. */
+:root{ --w-queue:240px; }
+
+/* ── 왼쪽: 영상 정보 카드 ── */
+/* 영상을 이미 불러왔으면 드롭존은 자리를 비켜 준다.
+   clip-box 는 한 번에 영상 하나만 다루므로 큰 드롭존이 계속 있을 이유가 없다. */
+#dropZone.compact{padding:8px;margin:8px 10px}
+#dropZone.compact p{display:none}
+#fileCard{padding:0 10px 10px}
+#fileCard #btnChange{width:100%;margin-top:8px}
+#fileName{font-size:12px;font-weight:600;margin-bottom:6px}
+#fileMeta{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:0}
+#fileMeta dt{font-size:11px;color:var(--dim)}
+#fileMeta dd{margin:0;font-size:11px;text-align:right}
+.warn-hint{color:var(--warn)}
+#queueHint{padding:0 10px}
+
+/* ── 왼쪽: 클립 목록 ── */
+#queueList li .no{
+  width:20px;height:20px;border-radius:50%;background:var(--line);color:var(--fg);
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;
+}
+#queueList li.active .no{background:var(--accent);color:#fff}
+#queueList .rg{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+#queueList .x{background:none;border:0;color:var(--dim);cursor:pointer;padding:2px 4px;font-size:14px;line-height:1;flex:none}
+#queueList .x:hover{color:var(--danger)}
+
+/* ── 가운데: 플레이어 ── */
+#videoBox{position:relative;display:none;line-height:0}
+#videoBox.on{display:block}
+#vid{display:block;background:#000}
+
+/* 크롭 박스 — 바깥을 어둡게 하는 것은 #cropBox 의 box-shadow 하나로 충분하다.
+   덮개를 하나 더 두면 박스 안쪽까지 같이 어두워진다. */
+#cropLayer{position:absolute;inset:0;cursor:crosshair}
+#cropBox{
+  position:absolute;border:1.5px solid #fff;cursor:move;z-index:2;
+  box-shadow:0 0 0 1px rgba(0,0,0,.55), 0 0 0 9999px rgba(10,12,16,.62);
+}
+#cropBox::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.3) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.3) 1px,transparent 1px);
+  background-size:33.33% 33.33%;background-position:-1px -1px;
+}
+#cropBox .ch{position:absolute;width:11px;height:11px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;z-index:3}
+#cropBox .ch.nw{left:-6px;top:-6px;cursor:nwse-resize}
+#cropBox .ch.ne{right:-6px;top:-6px;cursor:nesw-resize}
+#cropBox .ch.sw{left:-6px;bottom:-6px;cursor:nesw-resize}
+#cropBox .ch.se{right:-6px;bottom:-6px;cursor:nwse-resize}
+#cropBox .ch.n{left:50%;top:-6px;margin-left:-5.5px;cursor:ns-resize}
+#cropBox .ch.s{left:50%;bottom:-6px;margin-left:-5.5px;cursor:ns-resize}
+#cropBox .ch.w{top:50%;left:-6px;margin-top:-5.5px;cursor:ew-resize}
+#cropBox .ch.e{top:50%;right:-6px;margin-top:-5.5px;cursor:ew-resize}
+.cropsz{
+  position:absolute;left:0;top:-20px;background:var(--accent);color:#fff;
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;white-space:nowrap;line-height:1.6;
+}
+
+/* ── 가운데: 비율 바 ── */
+#cropBar{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;
+  background:var(--pane);border-top:1px solid var(--line);
+}
+#cropBar .seg{margin-bottom:0;flex:1;max-width:330px}
+#cropBar>.dim{font-size:11px}
+
+/* ── 가운데: 타임라인 ── */
+#stageFoot{background:var(--pane);border-top:1px solid var(--line);flex:none}
+#timeline{position:relative;height:72px;padding:8px 12px 0}
+#tlThumbs{position:absolute;left:12px;top:8px;height:40px;border-radius:5px;display:block;background:var(--pane2)}
+#tlTrack{position:absolute;left:12px;top:8px;right:12px;height:40px;border-radius:5px;cursor:pointer;overflow:hidden}
+.tl-dim{position:absolute;top:0;bottom:0;background:rgba(10,12,16,.68);pointer-events:none}
+/* 구간 안을 끌면 길이를 유지한 채 통째로 옮긴다 — 자주 쓰는 동작이라 손잡이보다 넓다 */
+#tlSel{
+  position:absolute;top:0;bottom:0;cursor:grab;
+  border-top:2px solid var(--accent);border-bottom:2px solid var(--accent);
+  background:rgba(47,111,235,.1);
+}
+#tlSel:active{cursor:grabbing}
+#tlSel.moving{background:rgba(47,111,235,.22)}
+.tl-hand{position:absolute;top:0;bottom:0;width:13px;margin-left:-6.5px;cursor:ew-resize;z-index:3}
+.tl-hand i{
+  position:absolute;left:3.5px;top:0;bottom:0;width:6px;background:var(--accent);
+  border-radius:3px;box-shadow:0 0 0 1.5px rgba(230,235,242,.9);
+}
+.tl-hand i::after{
+  content:'';position:absolute;left:2px;top:50%;margin-top:-5px;width:2px;height:10px;
+  border-left:1px solid rgba(255,255,255,.85);border-right:1px solid rgba(255,255,255,.85);
+}
+.tl-hand:hover i{background:#3b7cf7}
+#tlHead{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--danger);pointer-events:none;z-index:4}
+
+/* 시간 눈금 — 어디가 몇 초인지 알 수 있어야 구간을 잡는다 */
+#tlRuler{position:absolute;left:12px;right:12px;top:48px;height:14px;pointer-events:none}
+#tlRuler .tk{position:absolute;top:0;font-size:9px;color:var(--dim);font-variant-numeric:tabular-nums;transform:translateX(-50%);white-space:nowrap}
+#tlRuler .tk::before{content:'';position:absolute;left:50%;top:-4px;width:1px;height:3px;background:var(--line)}
+#tlRuler .tk.edge{transform:none}
+#tlRuler .tk.edge.r{transform:translateX(-100%)}
+
+#tlTip{
+  position:absolute;top:-4px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  padding:1px 6px;border-radius:4px;transform:translateX(-50%);pointer-events:none;z-index:5;white-space:nowrap;
+}
+
+#rangeInfo{
+  display:flex;align-items:center;gap:14px;padding:0 12px 8px;font-size:11px;flex-wrap:wrap;
+}
+#rangeInfo b{font-weight:700}
+.accent-txt{color:var(--accent)}
+
+/* ── 오른쪽: 프리셋 카드 ── */
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.pbtn{
+  background:#141922;border:1px solid var(--line);border-radius:6px;padding:7px 8px;
+  cursor:pointer;text-align:left;transition:.12s;display:flex;flex-direction:column;gap:2px;
+}
+.pbtn:hover{border-color:var(--dim)}
+.pbtn.active{border-color:var(--accent);background:rgba(47,111,235,.16)}
+.pbtn b{font-size:12px;font-weight:600}
+.pbtn span{font-size:10px;color:var(--dim);line-height:1.35}
+
+/* ── 오른쪽: 로고 미리보기 ── */
+.logorow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.logorow img{width:30px;height:30px;object-fit:contain;background:#141922;border:1px solid var(--line);border-radius:5px;flex:none}
+.logorow span{flex:1;min-width:0;font-size:11px;color:var(--dim)}
+
+/* ── 오른쪽: 결과 카드 ── */
+.res{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;background:var(--pane2)}
+.res .rv{background:#0d1016;display:flex;align-items:center;justify-content:center;min-height:70px}
+.res .rv img,.res .rv video{max-width:100%;max-height:200px;display:block}
+.res .rf{padding:8px 9px}
+.res .rn{font-size:11px;font-weight:600;word-break:break-all;line-height:1.4}
+.res .rm{font-size:10px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
+.res .rm.miss{color:var(--warn)}
+.res .rb{display:flex;gap:6px;margin-top:7px}
+.res .rb .btn{flex:1}
+
+/* ── 코어 로드 덮개 (base.css 의 #busy 를 그대로 쓰고 안쪽만 더한다) ── */
+#busyBody{display:flex;flex-direction:column;gap:7px;min-width:250px}
+#busyText{font-size:13px}
+#busySub{font-size:11px;font-variant-numeric:tabular-nums}
+.busybar{height:6px;background:var(--pane2);border-radius:3px;overflow:hidden}
+.busybar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+
+/* ── 결과 탭 개수 배지 ── */
+#tabs .tab{display:flex;align-items:center;justify-content:center;gap:5px}
+#tabs .tab .badge{padding:0 6px;font-size:10px}
+
+/* 예상 용량이 목표를 넘으면 미리 알려 준다 (굽고 나서 알면 늦다) */
+#rEst.over{color:var(--warn)}
+
+/* 결과 카드 낱개 지우기 */
+.res .rb .btn.x{flex:none;padding:6px 9px}

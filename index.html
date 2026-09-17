@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>clip-box</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Crect x='7' y='10' width='13' height='12' rx='2' fill='%23fff'/%3E%3Cpath d='M22 12.5 26 10v12l-4-2.5z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/base.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">
+    <span class="logo"></span>
+    <strong>clip-box</strong>
+    <span class="tagline" data-i18n="app.tagline"></span>
+  </div>
+  <div class="spacer"></div>
+  <button id="langToggle" class="btn tiny ghost" data-i18n-title="app.langTitle">EN</button>
+  <div id="privacyNote" class="privacy">
+    <span data-i18n="app.privacy"></span>
+    <button id="privacyClose" class="linkbtn" data-i18n-title="app.close">&times;</button>
+  </div>
+</header>
+
+<main id="layout">
+
+  <!-- ── 좌: 영상 + 클립 큐 ─────────────────────────── -->
+  <section id="queuePane">
+    <div class="pane-head">
+      <span data-i18n="queue.title"></span>
+      <span id="queueCount" class="badge">0</span>
+    </div>
+
+    <div id="dropZone">
+      <p data-i18n="queue.drop"></p>
+      <button id="btnPick" class="btn primary" data-i18n="queue.pick"></button>
+      <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden>
+    </div>
+
+    <div id="fileCard" hidden>
+      <div id="fileName" class="ellip"></div>
+      <dl id="fileMeta">
+        <dt data-i18n="file.length"></dt><dd id="fileDur" class="num">—</dd>
+        <dt data-i18n="file.size"></dt><dd id="fileDims" class="num">—</dd>
+        <dt data-i18n="file.bytes"></dt><dd id="fileBytes" class="num">—</dd>
+      </dl>
+      <p id="proxyNote" class="hint" data-i18n="file.proxy" hidden></p>
+      <p id="bigNote" class="hint warn-hint" data-i18n="file.big" hidden></p>
+      <button id="btnChange" class="btn tiny ghost" data-i18n="queue.change"></button>
+    </div>
+
+    <p id="queueHint" class="hint" data-i18n="queue.hint"></p>
+    <ul id="queueList"></ul>
+
+    <div class="pane-foot">
+      <button id="btnClearQueue" class="btn tiny ghost" data-i18n="queue.clear" disabled></button>
+      <button id="btnRemoveSel" class="btn tiny ghost" data-i18n="queue.removeSel" disabled></button>
+    </div>
+  </section>
+
+  <!-- ── 중: 플레이어 + 타임라인 ────────────────────── -->
+  <section id="stagePane">
+    <div id="stageHead">
+      <span id="stageName" class="ellip" data-i18n="stage.empty"></span>
+      <span id="stageDims" class="dim num"></span>
+      <span class="spacer"></span>
+      <button id="btnCrop" class="btn tiny toggle" data-i18n="stage.crop" disabled></button>
+      <button id="btnStill" class="btn tiny ghost" data-i18n="stage.still" data-i18n-title="stage.stillTitle" disabled></button>
+    </div>
+
+    <div id="stageWrap">
+      <div id="videoBox">
+        <video id="vid" playsinline muted></video>
+        <div id="cropLayer" hidden>
+          <div id="cropBox">
+            <i class="ch nw"></i><i class="ch ne"></i><i class="ch sw"></i><i class="ch se"></i>
+            <i class="ch n"></i><i class="ch s"></i><i class="ch w"></i><i class="ch e"></i>
+            <span id="cropSize" class="cropsz num"></span>
+          </div>
+        </div>
+      </div>
+      <div id="stageEmpty" data-i18n="stage.hint"></div>
+    </div>
+
+    <div id="cropBar" hidden>
+      <span class="dim" data-i18n="stage.ratio"></span>
+      <div class="seg" id="ratioSeg">
+        <button class="seg-b active" data-v="free" data-i18n="stage.free"></button>
+        <button class="seg-b" data-v="1">1:1</button>
+        <button class="seg-b" data-v="1.7778">16:9</button>
+        <button class="seg-b" data-v="1.3333">4:3</button>
+        <button class="seg-b" data-v="0.5625">9:16</button>
+      </div>
+      <button id="btnCropClear" class="btn tiny ghost" data-i18n="stage.cropClear"></button>
+    </div>
+
+    <div id="stageFoot">
+      <div id="timeline">
+        <canvas id="tlThumbs"></canvas>
+        <div id="tlTrack">
+          <div id="tlDimA" class="tl-dim"></div>
+          <div id="tlDimB" class="tl-dim"></div>
+          <div id="tlSel" data-i18n-title="range.dragTitle"></div>
+          <div id="tlIn" class="tl-hand"><i></i></div>
+          <div id="tlOut" class="tl-hand"><i></i></div>
+          <div id="tlHead"></div>
+        </div>
+        <div id="tlRuler"></div>
+        <div id="tlTip" class="num" hidden></div>
+      </div>
+      <div id="rangeInfo">
+        <span><span class="dim" data-i18n="range.in"></span> <b id="rIn" class="num">0:00.0</b></span>
+        <span><span class="dim" data-i18n="range.out"></span> <b id="rOut" class="num">0:00.0</b></span>
+        <span><span class="dim" data-i18n="range.len"></span> <b id="rLen" class="num accent-txt">0.0s</b></span>
+        <span><span class="dim" data-i18n="range.est"></span> <b id="rEst" class="num">—</b></span>
+        <span class="spacer"></span>
+        <span class="dim" data-i18n="range.keys"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 우: 도구 ──────────────────────────────────── -->
+  <section id="toolPane">
+    <nav id="tabs">
+      <button class="tab active" data-tab="out" data-i18n="tab.out"></button>
+      <button class="tab" data-tab="tf" data-i18n="tab.tf"></button>
+      <button class="tab" data-tab="deco" data-i18n="tab.deco"></button>
+      <button class="tab" data-tab="res"><span data-i18n="tab.res"></span><span id="resBadge" class="badge" hidden>0</span></button>
+    </nav>
+
+    <!-- ── 출력 ── -->
+    <div class="tabbody" id="tab-out">
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.preset"></div>
+        <div id="presetGrid" class="presets"></div>
+        <div class="row">
+          <button id="btnPresetSave" class="btn tiny" data-i18n="out.presetSave"></button>
+          <button id="btnPresetReset" class="btn tiny ghost" data-i18n="out.presetReset"></button>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.format"></div>
+        <div class="seg" id="formatSeg">
+          <button class="seg-b active" data-v="gif">GIF</button>
+          <button class="seg-b" data-v="webp">WebP</button>
+          <button class="seg-b" data-v="mp4">MP4</button>
+        </div>
+        <label class="row"><span data-i18n="out.width"></span>
+          <input type="range" id="optWidth" min="160" max="1280" step="20" value="480">
+          <output id="optWidthOut">480</output>
+        </label>
+        <label class="row"><span data-i18n="out.fps"></span>
+          <input type="range" id="optFps" min="4" max="30" step="1" value="10">
+          <output id="optFpsOut">10</output>
+        </label>
+        <label class="row opt" data-for="colors"><span data-i18n="out.colors"></span>
+          <input type="range" id="optColors" min="8" max="256" step="8" value="128">
+          <output id="optColorsOut">128</output>
+        </label>
+        <label class="row opt" data-for="dither"><span data-i18n="out.dither"></span>
+          <select id="optDither"></select>
+        </label>
+        <label class="row opt" data-for="quality" hidden><span data-i18n="out.quality"></span>
+          <input type="range" id="optQuality" min="10" max="100" step="5" value="75">
+          <output id="optQualityOut">75</output>
+        </label>
+        <label class="row opt" data-for="crf" hidden><span data-i18n="out.crf"></span>
+          <input type="range" id="optCrf" min="16" max="40" step="1" value="23">
+          <output id="optCrfOut">23</output>
+        </label>
+        <p class="hint" id="formatHint"></p>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.fit"></div>
+        <div class="row">
+          <button id="btnFit" class="btn tiny toggle" data-i18n="out.fitOn"></button>
+          <label class="mini"><span data-i18n="out.target"></span>
+            <input type="number" id="optTarget" min="0.2" max="200" step="0.5" value="5"></label>
+          <span class="dim">MB</span>
+        </div>
+        <p class="hint" data-i18n="out.fitHint"></p>
+      </div>
+    </div>
+
+    <!-- ── 변형 ── -->
+    <div class="tabbody" id="tab-tf" hidden>
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.crop"></div>
+        <div class="row">
+          <button id="btnCrop2" class="btn toggle" data-i18n="tf.cropOn"></button>
+          <button id="btnCropClear2" class="btn ghost" data-i18n="tf.cropClear"></button>
+        </div>
+        <div class="row"><span data-i18n="tf.cropNow"></span><span id="cropInfo" class="num">—</span></div>
+        <p class="hint" data-i18n="tf.cropHint"></p>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.motion"></div>
+        <label class="row"><span data-i18n="tf.speed"></span>
+          <input type="range" id="optSpeed" min="0" max="7" step="1" value="2">
+          <output id="optSpeedOut">1×</output>
+        </label>
+        <div class="seg" id="dirSeg">
+          <button class="seg-b active" data-v="normal" data-i18n="tf.fwd"></button>
+          <button class="seg-b" data-v="reverse" data-i18n="tf.rev"></button>
+          <button class="seg-b" data-v="pingpong" data-i18n="tf.pp"></button>
+        </div>
+        <label class="row"><span data-i18n="tf.fade"></span>
+          <input type="range" id="optFade" min="0" max="1.5" step="0.1" value="0">
+          <output id="optFadeOut">0</output>
+        </label>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.rotate"></div>
+        <div class="seg" id="rotSeg">
+          <button class="seg-b active" data-v="auto" data-i18n="tf.auto"></button>
+          <button class="seg-b" data-v="90">90&deg;</button>
+          <button class="seg-b" data-v="180">180&deg;</button>
+          <button class="seg-b" data-v="270">270&deg;</button>
+        </div>
+        <p class="hint" data-i18n="tf.rotateHint"></p>
+      </div>
+    </div>
+
+    <!-- ── 꾸미기 ── -->
+    <div class="tabbody" id="tab-deco" hidden>
+      <div class="grp">
+        <div class="grp-title" data-i18n="deco.text"></div>
+        <label class="row"><input type="text" id="optText" maxlength="60" data-i18n-ph="deco.textPh"></label>
+        <div class="seg" id="textPosSeg">
+          <button class="seg-b" data-v="top-left" data-i18n="deco.tl"></button>
+          <button class="seg-b" data-v="top-right" data-i18n="deco.tr"></button>
+          <button class="seg-b active" data-v="bottom-left" data-i18n="deco.bl"></button>
+          <button class="seg-b" data-v="bottom-right" data-i18n="deco.br"></button>
+        </div>
+        <label class="row"><span data-i18n="deco.size"></span>
+          <input type="range" id="optTextSize" min="10" max="72" step="2" value="24">
+          <output id="optTextSizeOut">24</output>
+        </label>
+        <label class="row"><span data-i18n="deco.pad"></span>
+          <input type="range" id="optTextPad" min="0" max="60" step="2" value="16">
+          <output id="optTextPadOut">16</output>
+        </label>
+        <p class="hint" data-i18n="deco.textHint"></p>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="deco.logo"></div>
+        <label class="row"><input type="file" id="logoFile" accept="image/png,image/webp,image/jpeg"></label>
+        <div id="logoRow" class="logorow" hidden>
+          <img id="logoPrev" alt="">
+          <span id="logoName" class="ellip"></span>
+          <button id="btnLogoClear" class="btn tiny ghost" data-i18n="deco.logoClear"></button>
+        </div>
+        <div class="seg" id="logoPosSeg">
+          <button class="seg-b" data-v="top-left" data-i18n="deco.tl"></button>
+          <button class="seg-b" data-v="top-right" data-i18n="deco.tr"></button>
+          <button class="seg-b" data-v="bottom-left" data-i18n="deco.bl"></button>
+          <button class="seg-b active" data-v="bottom-right" data-i18n="deco.br"></button>
+        </div>
+        <label class="row"><span data-i18n="deco.logoSize"></span>
+          <input type="range" id="optLogoSize" min="5" max="50" step="1" value="18">
+          <output id="optLogoSizeOut">18</output>
+        </label>
+        <label class="row"><span data-i18n="deco.pad"></span>
+          <input type="range" id="optLogoPad" min="0" max="60" step="2" value="16">
+          <output id="optLogoPadOut">16</output>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── 결과 ── -->
+    <div class="tabbody" id="tab-res" hidden>
+      <div id="resEmpty" class="hint" data-i18n="res.empty"></div>
+      <div id="resList"></div>
+      <div class="row" id="resFoot" hidden>
+        <button id="btnResClear" class="btn tiny ghost" data-i18n="res.clear"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="bottombar">
+  <button id="btnPlay" class="btn ghost" data-i18n-title="bar.play" disabled>&#9654;</button>
+  <button id="btnHome" class="btn ghost" data-i18n-title="bar.home" disabled>&#9198;</button>
+  <span id="clock" class="dim num">0:00.0 / 0:00.0</span>
+  <button id="btnLoop" class="btn tiny toggle on" data-i18n="bar.loop" disabled></button>
+  <span class="sep"></span>
+  <button id="btnIn" class="btn tiny" data-i18n="bar.in" disabled></button>
+  <button id="btnOut" class="btn tiny" data-i18n="bar.out" disabled></button>
+  <span class="sep"></span>
+  <button id="btnAddClip" class="btn" data-i18n="bar.addClip" disabled></button>
+  <button id="btnRun" class="btn primary" data-i18n="bar.run" disabled></button>
+  <button id="btnRunAll" class="btn accent" data-i18n="bar.runAll" disabled></button>
+  <button id="btnCancel" class="btn danger" data-i18n="bar.cancel" hidden></button>
+  <span class="spacer"></span>
+  <div id="progressWrap" hidden>
+    <div id="progressBar"><i></i></div>
+    <span id="progressText" class="dim"></span>
+  </div>
+</footer>
+
+<div id="toasts"></div>
+
+<div id="busy" hidden>
+  <div class="spin"></div>
+  <div id="busyBody">
+    <div id="busyText"></div>
+    <div id="busyBar" class="busybar" hidden><i></i></div>
+    <div id="busySub" class="dim"></div>
+  </div>
+</div>
+
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="js/app.js?v=2"></script>
+</body>
+</html>
