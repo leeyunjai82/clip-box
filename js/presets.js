@@ -50,13 +50,13 @@ export const DITHERS = [
   'none',
 ];
 
-// ── 기본 프리셋 (지시서 그대로) ──
+// ── 기본 프리셋 ──
+// name 은 한/영 두 벌로 두고 presetName() 이 골라 쓴다 (i18n.js 를 거치지 않는
+// 이유: 사용자가 프리셋을 고쳐 저장하면 이름은 그대로 두고 값만 바뀌기 때문).
 export const BUILTIN_PRESETS = [
   {
     id: 'readme',
-    name: 'README',
-    icon: 'fa-book',
-    desc: '480px · 10fps · GIF',
+    name: { ko: 'README', en: 'README' },
     format: 'gif',
     width: 480,
     fps: 10,
@@ -68,9 +68,7 @@ export const BUILTIN_PRESETS = [
   },
   {
     id: 'manual',
-    name: '매뉴얼',
-    icon: 'fa-file-lines',
-    desc: '640px · 12fps · WebP',
+    name: { ko: '매뉴얼', en: 'Manual' },
     format: 'webp',
     width: 640,
     fps: 12,
@@ -82,9 +80,7 @@ export const BUILTIN_PRESETS = [
   },
   {
     id: 'sns',
-    name: 'SNS',
-    icon: 'fa-share-nodes',
-    desc: '720px · 15fps · MP4 (무음)',
+    name: { ko: 'SNS', en: 'Social' },
     format: 'mp4',
     width: 720,
     fps: 15,
@@ -96,9 +92,7 @@ export const BUILTIN_PRESETS = [
   },
   {
     id: 'katalk',
-    name: '카톡',
-    icon: 'fa-comment',
-    desc: '360px · 10fps · GIF · ≤5MB',
+    name: { ko: '카톡', en: 'Messenger' },
     format: 'gif',
     width: 360,
     fps: 10,
@@ -118,7 +112,8 @@ export function loadPresets() {
   // 저장본이 오래돼서 항목이 빠져 있어도 기본값으로 메운다
   return BUILTIN_PRESETS.map(base => {
     const hit = saved.find(s => s && s.id === base.id);
-    return hit ? { ...base, ...hit, id: base.id, name: base.name, icon: base.icon } : { ...base };
+    // 이름은 저장본을 믿지 않는다 — 언어가 바뀌면 기본값 쪽이 맞다
+    return hit ? { ...base, ...hit, id: base.id, name: base.name } : { ...base };
   });
 }
 
@@ -129,6 +124,20 @@ export function savePresets(presets) {
 export function resetPresets() {
   try { localStorage.removeItem(LS_PRESETS); } catch (e) {}
   return BUILTIN_PRESETS.map(p => ({ ...p }));
+}
+
+/** 프리셋 이름 (언어별) */
+export function presetName(p, lang) {
+  if (!p || !p.name) return '';
+  if (typeof p.name === 'string') return p.name;
+  return p.name[lang] || p.name.ko;
+}
+
+/** 프리셋 설명 — 지금 값에서 만들어 낸다. 기호만 써서 한/영 공통으로 읽힌다. */
+export function describe(p) {
+  const f = FORMATS[p.format];
+  return `${p.width}px · ${p.fps}fps · ${f.label}` +
+    (p.maxBytes ? ` · ≤${Math.round(p.maxBytes / 1024 / 1024)}MB` : '');
 }
 
 export const DEFAULT_SETTINGS = {

@@ -1,14 +1,16 @@
-// ═══════════════════════════════════════════════════════════
-// 플레이어 + 타임라인(구간 드래그) + 크롭 박스
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// timeline.js — 플레이어 + 구간 드래그 + 크롭 박스
+// ═══════════════════════════════════════════════════════════════════════
 // · 좌표의 기준은 언제나 <video> 가 실제로 보여 주는 그림이다.
 //   회전 메타데이터가 붙은 폰 영상은 브라우저가 이미 돌려서 보여 주고,
 //   ffmpeg 도 기본으로 같은 방향으로 돌리므로 크롭 좌표가 서로 맞는다.
 // · 크롭 값은 '영상 픽셀' 로 들고 있는다 (화면 크기가 바뀌어도 안 흔들린다).
 
 const $ = (id) => document.getElementById(id);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const FRAME = 1 / 30;   // ←/→ 한 번에 움직일 시간 (원본 fps 를 알 수 없어 30fps 로 가정)
+const MIN_RANGE = 0.1;  // 이보다 짧은 구간은 만들 수 없다
 
 export const TL = {
   vid: null,
@@ -23,11 +25,12 @@ export const TL = {
   loop: true,
   onChange: null,       // 구간·크롭이 바뀔 때
   onTick: null,         // 재생 위치가 바뀔 때
+  onPlayState: null,    // 재생/멈춤이 바뀔 때
   _raf: 0,
   _thumbURL: null,
 };
 
-// ── 도우미 ──
+// ── 표시용 도우미 ──
 export function fmtTime(t) {
   if (!isFinite(t) || t < 0) t = 0;
   const m = Math.floor(t / 60);
@@ -42,27 +45,26 @@ export function fmtBytes(n) {
   return (n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 2 : 1) + ' MB';
 }
 
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // 초기화
-// ═══════════════════════════════════════════════════════════
-export function initTimeline({ onChange, onTick }) {
+// ═══════════════════════════════════════════════════════════════════════
+export function initTimeline({ onChange, onTick, onPlayState }) {
   TL.vid = $('vid');
   TL.onChange = onChange;
   TL.onTick = onTick;
+  TL.onPlayState = onPlayState;
 
-  wireTimeline();
+  wireTrack();
   wireCrop();
   wirePlayback();
   wireKeys();
 
-  window.addEventListener('resize', () => { drawTimeline(); drawCropBox(); redrawThumbs(); });
+  window.addEventListener('resize', () => { layout(); redrawThumbsSoon(); });
   return TL;
 }
 
 /**
- * 새 영상을 걸고 구간을 초기화한다.
+ * 새 영상을 건다.
  * over = { srcW, srcH, duration } — 미리보기용 대역 영상을 걸 때 쓴다.
  *   (대역 영상은 작게 줄여 놓았으므로, 크롭 좌표의 기준이 되는 크기는
  *    원본에서 읽은 값으로 덮어써야 한다)
@@ -74,21 +76,22 @@ export async function setVideo(url, over) {
   v.currentTime = 0;
 
   await new Promise((res, rej) => {
-    const ok = () => { cleanup(); res(); };
-    const no = () => { cleanup(); rej(new Error('메타데이터를 읽지 못했어요')); };
+    let timer = 0;
     const cleanup = () => {
       v.removeEventListener('loadeddata', ok);
       v.removeEventListener('error', no);
       clearTimeout(timer);
     };
+    const ok = () => { cleanup(); res(); };
+    const no = () => { cleanup(); rej(new Error('decode')); };
     // loadedmetadata 만으로는 부족하다 — 컨테이너는 읽히는데 코덱을 못 푸는
     // 파일(아이폰 HEVC 등)이 있어서, 실제 그림이 한 장 나오는지까지 본다.
     v.addEventListener('loadeddata', ok, { once: true });
     v.addEventListener('error', no, { once: true });
-    const timer = setTimeout(() => { cleanup(); rej(new Error('영상을 풀지 못했어요')); }, 12000);
+    timer = setTimeout(() => { cleanup(); rej(new Error('timeout')); }, 15000);
   });
 
-  if (!v.videoWidth || !v.videoHeight) throw new Error('영상을 풀지 못했어요');
+  if (!v.videoWidth || !v.videoHeight) throw new Error('decode');
 
   // 일부 WebM/MOV 는 loadedmetadata 때 duration 이 Infinity 다. 한 번 흔들어 깨운다.
   if (!isFinite(v.duration) || v.duration <= 0) {
@@ -112,13 +115,12 @@ export async function setVideo(url, over) {
   TL.end = Math.min(TL.duration, 5);          // 처음엔 5초 구간을 잡아 둔다
   TL.crop = null;
   TL.cropOn = false;
-  $('cropLayer').style.display = 'none';
-  $('cropBar').style.display = 'none';
-  $('videoWrap').classList.add('on');
-  $('stageEmpty').style.display = 'none';
+  $('cropLayer').hidden = true;
+  $('cropBar').hidden = true;
+  $('videoBox').classList.add('on');
+  $('stageEmpty').hidden = true;
 
-  fitVideo();
-  drawTimeline();
+  layout();
   buildThumbs().catch(() => {});
   emit();
   return { duration: TL.duration, w: TL.srcW, h: TL.srcH };
@@ -130,65 +132,62 @@ export function clearVideo() {
   v.removeAttribute('src');
   v.load();
   TL.duration = 0; TL.start = 0; TL.end = 0; TL.crop = null; TL.cropOn = false;
-  $('videoWrap').classList.remove('on');
-  $('stageEmpty').style.display = '';
-  $('cropLayer').style.display = 'none';
-  $('cropBar').style.display = 'none';
+  $('videoBox').classList.remove('on');
+  $('stageEmpty').hidden = false;
+  $('cropLayer').hidden = true;
+  $('cropBar').hidden = true;
 }
 
 function emit() { TL.onChange && TL.onChange(); }
 
-/** <video> 를 무대 크기에 맞춘다 (비율 유지, 확대는 하지 않는다) */
+/** 화면 크기에 맞춰 <video> · 타임라인 · 크롭 박스를 다시 그린다 */
+export function layout() {
+  fitVideo();
+  drawTrack();
+  drawRuler();
+  drawCropBox();
+}
+
+/** <video> 를 무대에 맞춘다 (비율 유지, 4배까지만 확대) */
 function fitVideo() {
-  const stage = $('stage');
-  const wrap = $('videoWrap');
+  const stage = $('stageWrap');
+  const box = $('videoBox');
   if (!TL.srcW || !TL.srcH || !stage) return;
-  const pad = 16;
-  const aw = Math.max(80, stage.clientWidth - pad);
-  const ah = Math.max(80, stage.clientHeight - pad);
+  const aw = Math.max(80, stage.clientWidth - 16);
+  const ah = Math.max(80, stage.clientHeight - 16);
   const k = Math.min(aw / TL.srcW, ah / TL.srcH, 4);
   const w = Math.round(TL.srcW * k);
   const h = Math.round(TL.srcH * k);
-  wrap.style.width = w + 'px';
-  wrap.style.height = h + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
   TL.vid.style.width = w + 'px';
   TL.vid.style.height = h + 'px';
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // 재생
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 function wirePlayback() {
   const v = TL.vid;
-
-  $('playBtn').addEventListener('click', togglePlay);
-  $('homeBtn').addEventListener('click', () => { seekTo(TL.start); });
-  $('loopBtn').addEventListener('click', () => {
-    TL.loop = !TL.loop;
-    $('loopBtn').classList.toggle('on', TL.loop);
-  });
-  $('inBtn').addEventListener('click', () => setIn(v.currentTime));
-  $('outBtn').addEventListener('click', () => setOut(v.currentTime));
-
-  v.addEventListener('play', () => { setPlayIcon(true); tick(); });
-  v.addEventListener('pause', () => { setPlayIcon(false); });
-  v.addEventListener('ended', () => { setPlayIcon(false); });
-}
-
-function setPlayIcon(on) {
-  const b = $('playBtn');
-  b.innerHTML = on ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
-  b.title = on ? '멈춤' : '재생';
+  v.addEventListener('play', () => { TL.onPlayState && TL.onPlayState(true); tick(); });
+  v.addEventListener('pause', () => { TL.onPlayState && TL.onPlayState(false); });
+  v.addEventListener('ended', () => { TL.onPlayState && TL.onPlayState(false); });
 }
 
 export function togglePlay() {
   const v = TL.vid;
-  if (!v.src) return;
+  if (!v.src || !TL.duration) return;
   if (v.paused) {
-    if (TL.loop && (v.currentTime < TL.start - 0.05 || v.currentTime >= TL.end - 0.02)) v.currentTime = TL.start;
+    if (TL.loop && (v.currentTime < TL.start - 0.05 || v.currentTime >= TL.end - 0.02)) {
+      v.currentTime = TL.start;
+    }
     v.play().catch(() => {});
   } else v.pause();
 }
+
+export function pause() { if (TL.vid) TL.vid.pause(); }
+
+export function setLoop(on) { TL.loop = !!on; }
 
 function tick() {
   cancelAnimationFrame(TL._raf);
@@ -199,7 +198,7 @@ function tick() {
       if (v.currentTime >= TL.end - 0.01) v.currentTime = TL.start;
       else if (v.currentTime < TL.start - 0.2) v.currentTime = TL.start;
     }
-    drawPlayhead();
+    drawHead();
     TL.onTick && TL.onTick(v.currentTime);
     if (!v.paused) TL._raf = requestAnimationFrame(step);
   };
@@ -208,103 +207,168 @@ function tick() {
 
 export function seekTo(t) {
   const v = TL.vid;
-  if (!v.src) return;
+  if (!v.src || !TL.duration) return;
   v.currentTime = clamp(t, 0, Math.max(0, TL.duration - 0.001));
-  drawPlayhead();
+  drawHead();
   TL.onTick && TL.onTick(v.currentTime);
 }
 
 export function setIn(t) {
-  TL.start = clamp(t, 0, Math.max(0, TL.duration - 0.1));
-  if (TL.end < TL.start + 0.1) TL.end = Math.min(TL.duration, TL.start + 0.1);
-  drawTimeline(); emit();
+  TL.start = clamp(t, 0, Math.max(0, TL.duration - MIN_RANGE));
+  if (TL.end < TL.start + MIN_RANGE) TL.end = Math.min(TL.duration, TL.start + MIN_RANGE);
+  drawTrack(); emit();
 }
 
 export function setOut(t) {
-  TL.end = clamp(t, 0.1, TL.duration);
-  if (TL.start > TL.end - 0.1) TL.start = Math.max(0, TL.end - 0.1);
-  drawTimeline(); emit();
+  TL.end = clamp(t, MIN_RANGE, TL.duration);
+  if (TL.start > TL.end - MIN_RANGE) TL.start = Math.max(0, TL.end - MIN_RANGE);
+  drawTrack(); emit();
 }
 
-export function setRange(a, b) {
+export function setRange(a, b, seek) {
   TL.start = clamp(Math.min(a, b), 0, TL.duration);
   TL.end = clamp(Math.max(a, b), 0, TL.duration);
-  if (TL.end - TL.start < 0.1) TL.end = Math.min(TL.duration, TL.start + 0.1);
-  drawTimeline(); emit();
-  seekTo(TL.start);
+  if (TL.end - TL.start < MIN_RANGE) TL.end = Math.min(TL.duration, TL.start + MIN_RANGE);
+  drawTrack(); emit();
+  if (seek !== false) seekTo(TL.start);
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // 타임라인 바
-// ═══════════════════════════════════════════════════════════
-function trackRect() { return $('tlTrack').getBoundingClientRect(); }
-const xToT = (x) => { const r = trackRect(); return clamp((x - r.left) / Math.max(1, r.width), 0, 1) * TL.duration; };
+// ═══════════════════════════════════════════════════════════════════════
+const trackRect = () => $('tlTrack').getBoundingClientRect();
+const xToT = (x) => {
+  const r = trackRect();
+  return clamp((x - r.left) / Math.max(1, r.width), 0, 1) * TL.duration;
+};
 const tToPct = (t) => (TL.duration > 0 ? clamp(t / TL.duration, 0, 1) * 100 : 0);
 
-function drawTimeline() {
+/** 시간 눈금 — 어디가 몇 초인지 보여야 구간을 잡을 수 있다 */
+function drawRuler() {
+  const el = $('tlRuler');
+  el.innerHTML = '';
+  if (!TL.duration) return;
+  const W = Math.max(1, $('tlTrack').clientWidth);
+  // 60px 에 눈금 하나쯤. 사람이 읽는 단위로 올림한다.
+  const raw = TL.duration / Math.max(2, Math.floor(W / 66));
+  const STEPS = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
+  const step = STEPS.find(v => v >= raw) || Math.ceil(raw / 600) * 600;
+
+  for (let tt = 0; tt <= TL.duration + 1e-6; tt += step) {
+    const d = document.createElement('span');
+    d.className = 'tk';
+    const pct = tt / TL.duration;
+    if (pct < 0.02) d.classList.add('edge');
+    else if (pct > 0.98) d.classList.add('edge', 'r');
+    d.style.left = (pct * 100) + '%';
+    d.textContent = step < 1 ? tt.toFixed(1) + 's' : fmtTime(tt);
+    el.appendChild(d);
+  }
+}
+
+function drawTrack() {
   if (!TL.duration) return;
   const a = tToPct(TL.start), b = tToPct(TL.end);
-  $('tlDim1').style.left = '0%'; $('tlDim1').style.width = a + '%';
-  $('tlDim2').style.left = b + '%'; $('tlDim2').style.width = (100 - b) + '%';
+  $('tlDimA').style.left = '0%'; $('tlDimA').style.width = a + '%';
+  $('tlDimB').style.left = b + '%'; $('tlDimB').style.width = (100 - b) + '%';
   $('tlSel').style.left = a + '%'; $('tlSel').style.width = (b - a) + '%';
-  $('tlHIn').style.left = a + '%';
-  $('tlHOut').style.left = b + '%';
-  drawPlayhead();
+  $('tlIn').style.left = a + '%';
+  $('tlOut').style.left = b + '%';
+  drawHead();
 }
 
-function drawPlayhead() {
+function drawHead() {
   if (!TL.duration) return;
-  $('tlPlay').style.left = tToPct(TL.vid.currentTime) + '%';
+  $('tlHead').style.left = tToPct(TL.vid.currentTime) + '%';
 }
 
-function wireTimeline() {
+function wireTrack() {
   const track = $('tlTrack');
+  const sel = $('tlSel');
+  const tip = $('tlTip');
   let mode = null;
+  let grab = null;      // 구간 통째 이동용 { at, start, end }
 
   const down = (e, m) => {
     if (!TL.duration) return;
     mode = m;
     e.preventDefault();
-    e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
-    move(e);
+    if (e.target.setPointerCapture) e.target.setPointerCapture(e.pointerId);
+    if (m === 'move') {
+      grab = { at: xToT(e.clientX), start: TL.start, end: TL.end, x0: e.clientX, moved: false };
+      sel.classList.add('moving');
+    } else move(e);
   };
 
   const move = (e) => {
     if (!mode) return;
     const t = xToT(e.clientX);
-    if (mode === 'in') { TL.start = clamp(t, 0, TL.end - 0.1); seekTo(TL.start); }
-    else if (mode === 'out') { TL.end = clamp(t, TL.start + 0.1, TL.duration); seekTo(TL.end); }
-    else { seekTo(t); }
-    drawTimeline();
+    if (mode === 'in') { TL.start = clamp(t, 0, TL.end - MIN_RANGE); seekTo(TL.start); }
+    else if (mode === 'out') { TL.end = clamp(t, TL.start + MIN_RANGE, TL.duration); seekTo(TL.end); }
+    else if (mode === 'move') {
+      if (Math.abs(e.clientX - grab.x0) < 3 && !grab.moved) return;  // 아직 '클릭' 이다
+      grab.moved = true;
+      // 길이는 그대로 두고 통째로 민다
+      const len = grab.end - grab.start;
+      const s = clamp(grab.start + (t - grab.at), 0, Math.max(0, TL.duration - len));
+      TL.start = s; TL.end = s + len;
+      seekTo(TL.start);
+    } else seekTo(t);
+    drawTrack();
     if (mode !== 'scrub') emit();
   };
 
-  const up = () => { if (mode) { mode = null; emit(); } };
+  const up = (e) => {
+    if (!mode) return;
+    // 구간 안을 끌지 않고 톡 눌렀으면 그냥 그 자리로 이동한다 (미리보기용)
+    if (mode === 'move' && grab && !grab.moved && e) seekTo(xToT(e.clientX));
+    mode = null; grab = null;
+    sel.classList.remove('moving');
+    emit();
+  };
 
-  $('tlHIn').addEventListener('pointerdown', (e) => { e.stopPropagation(); down(e, 'in'); });
-  $('tlHOut').addEventListener('pointerdown', (e) => { e.stopPropagation(); down(e, 'out'); });
+  $('tlIn').addEventListener('pointerdown', (e) => { e.stopPropagation(); down(e, 'in'); });
+  $('tlOut').addEventListener('pointerdown', (e) => { e.stopPropagation(); down(e, 'out'); });
+  sel.addEventListener('pointerdown', (e) => { e.stopPropagation(); down(e, 'move'); });
   track.addEventListener('pointerdown', (e) => down(e, 'scrub'));
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', up);
+
+  // 가리키는 곳이 몇 초인지 알려 준다
+  const showTip = (e) => {
+    if (!TL.duration) return;
+    const r = trackRect();
+    const pr = $('timeline').getBoundingClientRect();
+    tip.hidden = false;
+    tip.textContent = fmtTime(xToT(e.clientX));
+    tip.style.left = clamp(e.clientX - pr.left, 26, pr.width - 26) + 'px';
+  };
+  track.addEventListener('pointermove', showTip);
+  track.addEventListener('pointerleave', () => { if (!mode) tip.hidden = true; });
 }
 
 // ── 필름스트립 ──
+// 영상이 바뀌거나 창 크기가 바뀌면 다시 그린다. 앞서 돌던 그리기는
+// 세대 번호(thumbGen)가 달라지는 순간 스스로 멈춘다.
+let thumbGen = 0;
+
 async function buildThumbs() {
+  const myGen = ++thumbGen;
   const cv = $('tlThumbs');
   const track = $('tlTrack');
   const W = Math.max(40, Math.round(track.clientWidth));
-  const H = 46;
+  const H = 40;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#E7EEF1';
-  ctx.fillRect(0, 0, W, H);
   if (!TL.duration || !TL._thumbURL) return;
 
-  const n = clamp(Math.round(W / 64), 5, 20);
+  const n = clamp(Math.round(W / 60), 5, 24);
   const tw = W / n;
 
   const v = document.createElement('video');
@@ -314,9 +378,10 @@ async function buildThumbs() {
     await new Promise((res, rej) => {
       v.addEventListener('loadeddata', res, { once: true });
       v.addEventListener('error', rej, { once: true });
-      setTimeout(rej, 8000);
+      setTimeout(rej, 10000);
     });
   } catch (e) { return; }
+  if (myGen !== thumbGen) return;
 
   const sw = v.videoWidth, sh = v.videoHeight;
   if (!sw || !sh) return;
@@ -326,36 +391,38 @@ async function buildThumbs() {
   const cx = (sw - cw) / 2, cy = (sh - ch) / 2;
 
   for (let i = 0; i < n; i++) {
+    if (myGen !== thumbGen) break;   // 그 사이 다른 영상으로 바뀌었다
     const t = TL.duration * (i + 0.5) / n;
     try {
-      await new Promise((res, rej) => {
-        v.addEventListener('seeked', res, { once: true });
-        v.addEventListener('error', rej, { once: true });
-        setTimeout(res, 1200);
+      await new Promise((res) => {
+        const done = () => { v.removeEventListener('seeked', done); res(); };
+        v.addEventListener('seeked', done, { once: true });
+        setTimeout(done, 1500);
         v.currentTime = Math.min(t, Math.max(0, TL.duration - 0.05));
       });
       ctx.drawImage(v, cx, cy, cw, ch, i * tw, 0, tw + 0.5, H);
     } catch (e) { break; }
   }
   v.removeAttribute('src'); v.load();
-  TL._thumbsDone = true;
 }
 
 let redrawTimer = 0;
-function redrawThumbs() {
+function redrawThumbsSoon() {
   clearTimeout(redrawTimer);
-  redrawTimer = setTimeout(() => { if (TL.duration) buildThumbs().catch(() => {}); }, 260);
+  redrawTimer = setTimeout(() => {
+    if (TL.duration) buildThumbs().catch(() => {});
+  }, 280);
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // 크롭 박스
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 export function setCropEnabled(on) {
   TL.cropOn = !!on;
-  $('cropLayer').style.display = TL.cropOn ? '' : 'none';
-  $('cropBar').style.display = TL.cropOn ? '' : 'none';
+  $('cropLayer').hidden = !TL.cropOn;
+  $('cropBar').hidden = !TL.cropOn;
   if (TL.cropOn && !TL.crop) defaultCrop();
-  drawCropBox();
+  layout();
   emit();
 }
 
@@ -370,9 +437,9 @@ export function setRatio(r) {
   TL.ratio = r;
   if (TL.crop && r !== 'free') {
     const ratio = parseFloat(r);
-    // 넓이는 두고 높이를 맞춘다. 넘치면 넓이를 줄인다.
     let w = TL.crop.w, h = w / ratio;
     if (h > TL.srcH) { h = TL.srcH; w = h * ratio; }
+    if (w > TL.srcW) { w = TL.srcW; h = w / ratio; }
     TL.crop.w = w; TL.crop.h = h;
     TL.crop.x = clamp(TL.crop.x, 0, TL.srcW - w);
     TL.crop.y = clamp(TL.crop.y, 0, TL.srcH - h);
@@ -395,20 +462,20 @@ function defaultCrop() {
 
 /** 화면 px ↔ 영상 px */
 function scaleFactor() {
-  const wrap = $('videoWrap');
-  return TL.srcW > 0 ? wrap.clientWidth / TL.srcW : 1;
+  const box = $('videoBox');
+  return TL.srcW > 0 ? box.clientWidth / TL.srcW : 1;
 }
 
 function drawCropBox() {
   const box = $('cropBox');
-  if (!TL.crop || !TL.srcW) { box.style.display = 'none'; return; }
+  if (!TL.crop || !TL.srcW) { box.hidden = true; return; }
   const k = scaleFactor();
-  box.style.display = '';
+  box.hidden = false;
   box.style.left = (TL.crop.x * k) + 'px';
   box.style.top = (TL.crop.y * k) + 'px';
   box.style.width = (TL.crop.w * k) + 'px';
   box.style.height = (TL.crop.h * k) + 'px';
-  $('cropSz').textContent = `${Math.round(TL.crop.w)} × ${Math.round(TL.crop.h)}`;
+  $('cropSize').textContent = `${Math.round(TL.crop.w)} × ${Math.round(TL.crop.h)}`;
 }
 
 function wireCrop() {
@@ -426,7 +493,7 @@ function wireCrop() {
     if (!TL.srcW) return;
     e.preventDefault();
     e.stopPropagation();
-    layer.setPointerCapture && layer.setPointerCapture(e.pointerId);
+    if (layer.setPointerCapture) layer.setPointerCapture(e.pointerId);
     drag = { kind, from: toVid(e), orig: TL.crop ? { ...TL.crop } : null };
     if (kind === 'new') {
       TL.crop = { x: drag.from.x, y: drag.from.y, w: 1, h: 1 };
@@ -464,10 +531,10 @@ function wireCrop() {
       if (k.includes('n')) { const ny = clamp(p.y, 0, y + h - 8); h = y + h - ny; y = ny; }
       if (k.includes('s')) { h = clamp(p.y - y, 8, TL.srcH - y); }
       if (r) {
-        // 비율 고정 — 가로를 기준으로 세로를 맞춘다 (n/s 만 잡으면 반대로)
-        if (k === 'n' || k === 's') { const nw = h * r; x = clamp(x + (w - nw) / 2, 0, TL.srcW - nw); w = nw; }
+        // 비율 고정 — 위/아래 변만 잡았으면 가로를 맞추고, 아니면 세로를 맞춘다
+        if (k === 'n' || k === 's') { const nw = h * r; x = clamp(x + (w - nw) / 2, 0, Math.max(0, TL.srcW - nw)); w = nw; }
         else { const nh = w / r; if (k.includes('n')) y = y + h - nh; h = nh; }
-        if (y < 0) { y = 0; }
+        if (y < 0) y = 0;
         if (y + h > TL.srcH) { h = TL.srcH - y; w = h * r; }
         if (x + w > TL.srcW) { w = TL.srcW - x; h = w / r; }
       }
@@ -481,7 +548,7 @@ function wireCrop() {
   window.addEventListener('pointercancel', end);
 }
 
-/** 인코딩에 넘길 크롭 값 (짝수로 맞춘 정수) */
+/** 인코딩에 넘길 크롭 값 (짝수로 맞춘 정수). 원본 그대로면 null. */
 export function cropForEncode() {
   if (!TL.cropOn || !TL.crop) return null;
   const c = TL.crop;
@@ -489,18 +556,23 @@ export function cropForEncode() {
   const h = Math.max(2, 2 * Math.round(Math.min(c.h, TL.srcH - c.y) / 2));
   const x = clamp(Math.round(c.x), 0, TL.srcW - w);
   const y = clamp(Math.round(c.y), 0, TL.srcH - h);
-  // 원본 그대로면 크롭 필터를 넣지 않는다
   if (x === 0 && y === 0 && w === TL.srcW && h === TL.srcH) return null;
   return { x, y, w, h };
 }
 
-// ═══════════════════════════════════════════════════════════
+/** 지금 크롭을 그대로 다시 건다 (큐에서 클립을 불러올 때) */
+export function applyCrop(crop) {
+  TL.crop = crop ? { ...crop } : null;
+  setCropEnabled(!!crop);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // 단축키
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 function wireKeys() {
   window.addEventListener('keydown', (e) => {
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+    const el = e.target;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (!TL.duration) return;
 
@@ -515,18 +587,20 @@ function wireKeys() {
   });
 }
 
-/** 현재 프레임을 PNG 로 (P2 — 스틸 컷) */
+/** 현재 프레임을 캔버스로 (스틸 컷 저장용) */
 export function grabStill() {
   const v = TL.vid;
   if (!v.src || !TL.srcW) return null;
-  const c = TL.cropOn ? cropForEncode() : null;
+  const c = cropForEncode();
   const cv = document.createElement('canvas');
-  cv.width = c ? c.w : TL.srcW;
-  cv.height = c ? c.h : TL.srcH;
+  // 대역 영상을 보고 있을 수 있으므로 실제 <video> 의 픽셀 크기를 기준으로 잡는다
+  const kx = v.videoWidth / TL.srcW, ky = v.videoHeight / TL.srcH;
+  cv.width = Math.max(1, Math.round((c ? c.w : TL.srcW) * kx));
+  cv.height = Math.max(1, Math.round((c ? c.h : TL.srcH) * ky));
   const ctx = cv.getContext('2d');
-  if (c) ctx.drawImage(v, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+  if (c) ctx.drawImage(v, c.x * kx, c.y * ky, c.w * kx, c.h * ky, 0, 0, cv.width, cv.height);
   else ctx.drawImage(v, 0, 0, cv.width, cv.height);
   return cv;
 }
 
-export { fitVideo, drawTimeline, drawCropBox };
+export { drawTrack, drawRuler, drawCropBox, redrawThumbsSoon };

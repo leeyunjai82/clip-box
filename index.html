@@ -2,355 +2,321 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>clip-box — 시연 영상에서 GIF 잘라내기</title>
-<meta name="description" content="시연 영상에서 구간을 잘라 GIF·WebP·MP4 로 만듭니다. 영상은 브라우저 밖으로 나가지 않습니다.">
-<link rel="icon" type="image/png" href="assets/img/favicon.png">
-<meta name="theme-color" content="#FBF7EF">
-<link rel="stylesheet" href="assets/fonts/pretendard.css?v=1">
-<link rel="stylesheet" href="css/all.min.css?v=1">
-<link rel="stylesheet" href="css/ui.css?v=1">
-<link rel="stylesheet" href="css/theme-maker.css?v=1">
-<link rel="stylesheet" href="css/style.css?v=1">
+<meta name="viewport" content="width=1280">
+<title>clip-box</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Crect x='7' y='10' width='13' height='12' rx='2' fill='%23fff'/%3E%3Cpath d='M22 12.5 26 10v12l-4-2.5z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/base.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
-<header>
-  <h1><img src="assets/img/pibo-logo.png" alt=""><span class="brand-txt">clip-box</span></h1>
-  <span class="badge" id="coreBadge">준비 중…</span>
-  <span style="flex:1"></span>
+<header id="topbar">
+  <div class="brand">
+    <span class="logo"></span>
+    <strong>clip-box</strong>
+    <span class="tagline" data-i18n="app.tagline"></span>
+  </div>
+  <div class="spacer"></div>
+  <button id="langToggle" class="btn tiny ghost" data-i18n-title="app.langTitle">EN</button>
+  <div id="privacyNote" class="privacy">
+    <span data-i18n="app.privacy"></span>
+    <button id="privacyClose" class="linkbtn" data-i18n-title="app.close">&times;</button>
+  </div>
 </header>
 
-<div id="cbMain">
+<main id="layout">
 
-  <!-- ══════════ 왼쪽: 영상 + 클립 목록 ══════════ -->
-  <div class="pan" id="panL">
-    <div class="ph"><i class="fa-solid fa-film"></i>영상</div>
-    <div class="pb">
-
-      <label class="drop" id="drop" for="fileInput">
-        <i class="fa-solid fa-arrow-down-to-bracket fa-lg"></i>
-        <b>영상 파일을 여기에 놓으세요</b>
-        <span>또는 눌러서 고르기 — MP4 / MOV / WebM</span>
-      </label>
-      <input type="file" id="fileInput" accept="video/*,.mov,.mp4,.webm,.m4v">
-
-      <div id="fileInfo" style="display:none">
-        <div class="fname" id="fName">—</div>
-        <div class="info-row"><span>길이</span><span class="info-val" id="fDur">—</span></div>
-        <div class="info-row"><span>크기</span><span class="info-val" id="fSize">—</span></div>
-        <div class="info-row"><span>용량</span><span class="info-val" id="fBytes">—</span></div>
-        <button class="db" id="reload" style="width:100%;justify-content:center;margin-top:8px">
-          <i class="fa-solid fa-rotate"></i> 다른 영상 고르기
-        </button>
-      </div>
-
-      <div id="proxyNote" class="warnbox note" style="display:none">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>이 브라우저가 못 읽는 코덱이라 미리보기용 영상을 따로 만들었어요. 굽는 것은 언제나 원본입니다.</span>
-      </div>
-
-      <div id="bigWarn" class="warnbox" style="display:none">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <span>영상이 커요 (300MB 넘음). 메모리 부족으로 실패할 수 있습니다. 폰에서 먼저 구간을 잘라 오세요.</span>
-      </div>
-
-      <div class="sec2">
-        <div class="st"><i class="fa-solid fa-list"></i>클립 목록 <span class="cnt" id="clipCnt">0</span></div>
-        <button class="db" id="addClip" disabled style="width:100%;justify-content:center">
-          <i class="fa-solid fa-plus"></i> 지금 구간을 클립으로
-        </button>
-        <div id="clipList"></div>
-        <div class="hint" id="clipHint">클립을 더하면 한꺼번에 구울 수 있어요.</div>
-        <button class="db go" id="encodeAll" disabled style="width:100%;justify-content:center;margin-top:8px">
-          <i class="fa-solid fa-file-zipper"></i> 모두 굽기 → ZIP
-        </button>
-      </div>
-
+  <!-- ── 좌: 영상 + 클립 큐 ─────────────────────────── -->
+  <section id="queuePane">
+    <div class="pane-head">
+      <span data-i18n="queue.title"></span>
+      <span id="queueCount" class="badge">0</span>
     </div>
-  </div>
 
-  <!-- ══════════ 가운데: 플레이어 + 타임라인 ══════════ -->
-  <div class="pan" id="panC">
-    <div class="ph"><i class="fa-solid fa-scissors"></i><span id="panCTitle">구간 고르기</span>
-      <span class="ph-sp"></span>
-      <button class="db sm" id="cropToggle" disabled title="크롭 켜기"><i class="fa-solid fa-crop-simple"></i> 크롭</button>
-      <button class="db sm" id="stillBtn" disabled title="현재 프레임 저장 (PNG)"><i class="fa-solid fa-camera"></i></button>
+    <div id="dropZone">
+      <p data-i18n="queue.drop"></p>
+      <button id="btnPick" class="btn primary" data-i18n="queue.pick"></button>
+      <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden>
     </div>
-    <div class="pb nopad">
 
-      <div id="stage">
-        <div id="videoWrap">
-          <video id="vid" playsinline muted></video>
-          <div id="cropLayer" style="display:none">
-            <div id="cropBox">
-              <i class="ch nw"></i><i class="ch ne"></i><i class="ch sw"></i><i class="ch se"></i>
-              <i class="ch n"></i><i class="ch s"></i><i class="ch w"></i><i class="ch e"></i>
-              <span class="cropsz" id="cropSz"></span>
-            </div>
+    <div id="fileCard" hidden>
+      <div id="fileName" class="ellip"></div>
+      <dl id="fileMeta">
+        <dt data-i18n="file.length"></dt><dd id="fileDur" class="num">—</dd>
+        <dt data-i18n="file.size"></dt><dd id="fileDims" class="num">—</dd>
+        <dt data-i18n="file.bytes"></dt><dd id="fileBytes" class="num">—</dd>
+      </dl>
+      <p id="proxyNote" class="hint" data-i18n="file.proxy" hidden></p>
+      <p id="bigNote" class="hint warn-hint" data-i18n="file.big" hidden></p>
+      <button id="btnChange" class="btn tiny ghost" data-i18n="queue.change"></button>
+    </div>
+
+    <p id="queueHint" class="hint" data-i18n="queue.hint"></p>
+    <ul id="queueList"></ul>
+
+    <div class="pane-foot">
+      <button id="btnClearQueue" class="btn tiny ghost" data-i18n="queue.clear" disabled></button>
+      <button id="btnRemoveSel" class="btn tiny ghost" data-i18n="queue.removeSel" disabled></button>
+    </div>
+  </section>
+
+  <!-- ── 중: 플레이어 + 타임라인 ────────────────────── -->
+  <section id="stagePane">
+    <div id="stageHead">
+      <span id="stageName" class="ellip" data-i18n="stage.empty"></span>
+      <span id="stageDims" class="dim num"></span>
+      <span class="spacer"></span>
+      <button id="btnCrop" class="btn tiny toggle" data-i18n="stage.crop" disabled></button>
+      <button id="btnStill" class="btn tiny ghost" data-i18n="stage.still" data-i18n-title="stage.stillTitle" disabled></button>
+    </div>
+
+    <div id="stageWrap">
+      <div id="videoBox">
+        <video id="vid" playsinline muted></video>
+        <div id="cropLayer" hidden>
+          <div id="cropBox">
+            <i class="ch nw"></i><i class="ch ne"></i><i class="ch sw"></i><i class="ch se"></i>
+            <i class="ch n"></i><i class="ch s"></i><i class="ch w"></i><i class="ch e"></i>
+            <span id="cropSize" class="cropsz num"></span>
           </div>
         </div>
-        <div id="stageEmpty">
-          <img src="assets/img/pibo-hello.png" alt="">
-          <span>영상을 불러오면 여기에 나와요</span>
-        </div>
       </div>
+      <div id="stageEmpty" data-i18n="stage.hint"></div>
+    </div>
 
-      <div id="cropBar" style="display:none">
-        <span class="tl-label">비율</span>
-        <div class="segbtns" id="ratioBtns">
-          <button class="db sm on" data-ratio="free">자유</button>
-          <button class="db sm" data-ratio="1">1:1</button>
-          <button class="db sm" data-ratio="1.7778">16:9</button>
-          <button class="db sm" data-ratio="1.3333">4:3</button>
-          <button class="db sm" data-ratio="0.5625">9:16</button>
-        </div>
-        <span class="tl-sep"></span>
-        <button class="db sm" id="cropClear"><i class="fa-solid fa-xmark"></i> 크롭 지우기</button>
+    <div id="cropBar" hidden>
+      <span class="dim" data-i18n="stage.ratio"></span>
+      <div class="seg" id="ratioSeg">
+        <button class="seg-b active" data-v="free" data-i18n="stage.free"></button>
+        <button class="seg-b" data-v="1">1:1</button>
+        <button class="seg-b" data-v="1.7778">16:9</button>
+        <button class="seg-b" data-v="1.3333">4:3</button>
+        <button class="seg-b" data-v="0.5625">9:16</button>
       </div>
+      <button id="btnCropClear" class="btn tiny ghost" data-i18n="stage.cropClear"></button>
+    </div>
 
-      <div id="playbar">
-        <button class="db sm" id="playBtn" disabled title="재생"><i class="fa-solid fa-play"></i></button>
-        <button class="db sm" id="homeBtn" disabled title="처음으로"><i class="fa-solid fa-backward-step"></i></button>
-        <span class="tl-time-display" id="tCur">0:00.0</span>
-        <span class="tl-label">/</span>
-        <span class="tl-label" id="tTotal">0:00.0</span>
-        <span class="tl-sep"></span>
-        <button class="db sm on" id="loopBtn" disabled title="구간 반복"><i class="fa-solid fa-repeat"></i> 구간 반복</button>
-        <span class="ph-sp"></span>
-        <button class="db sm" id="inBtn" disabled title="시작점 (I)"><b>I</b> 시작</button>
-        <button class="db sm" id="outBtn" disabled title="끝점 (O)"><b>O</b> 끝</button>
-      </div>
-
-      <div id="tl">
+    <div id="stageFoot">
+      <div id="timeline">
         <canvas id="tlThumbs"></canvas>
         <div id="tlTrack">
-          <div id="tlDim1" class="tl-dim"></div>
-          <div id="tlDim2" class="tl-dim"></div>
-          <div id="tlSel"></div>
-          <div id="tlHIn" class="tl-hand"><i></i></div>
-          <div id="tlHOut" class="tl-hand"><i></i></div>
-          <div id="tlPlay"></div>
+          <div id="tlDimA" class="tl-dim"></div>
+          <div id="tlDimB" class="tl-dim"></div>
+          <div id="tlSel" data-i18n-title="range.dragTitle"></div>
+          <div id="tlIn" class="tl-hand"><i></i></div>
+          <div id="tlOut" class="tl-hand"><i></i></div>
+          <div id="tlHead"></div>
+        </div>
+        <div id="tlRuler"></div>
+        <div id="tlTip" class="num" hidden></div>
+      </div>
+      <div id="rangeInfo">
+        <span><span class="dim" data-i18n="range.in"></span> <b id="rIn" class="num">0:00.0</b></span>
+        <span><span class="dim" data-i18n="range.out"></span> <b id="rOut" class="num">0:00.0</b></span>
+        <span><span class="dim" data-i18n="range.len"></span> <b id="rLen" class="num accent-txt">0.0s</b></span>
+        <span><span class="dim" data-i18n="range.est"></span> <b id="rEst" class="num">—</b></span>
+        <span class="spacer"></span>
+        <span class="dim" data-i18n="range.keys"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 우: 도구 ──────────────────────────────────── -->
+  <section id="toolPane">
+    <nav id="tabs">
+      <button class="tab active" data-tab="out" data-i18n="tab.out"></button>
+      <button class="tab" data-tab="tf" data-i18n="tab.tf"></button>
+      <button class="tab" data-tab="deco" data-i18n="tab.deco"></button>
+      <button class="tab" data-tab="res"><span data-i18n="tab.res"></span><span id="resBadge" class="badge" hidden>0</span></button>
+    </nav>
+
+    <!-- ── 출력 ── -->
+    <div class="tabbody" id="tab-out">
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.preset"></div>
+        <div id="presetGrid" class="presets"></div>
+        <div class="row">
+          <button id="btnPresetSave" class="btn tiny" data-i18n="out.presetSave"></button>
+          <button id="btnPresetReset" class="btn tiny ghost" data-i18n="out.presetReset"></button>
         </div>
       </div>
 
-      <div id="rangebar">
-        <span class="rb"><i class="fa-solid fa-right-to-bracket"></i> 시작 <b id="rIn">0:00.0</b></span>
-        <span class="rb"><i class="fa-solid fa-right-from-bracket"></i> 끝 <b id="rOut">0:00.0</b></span>
-        <span class="rb hi"><i class="fa-solid fa-stopwatch"></i> 구간 길이 <b id="rLen">0.0s</b></span>
-        <span class="rb"><i class="fa-solid fa-weight-hanging"></i> 예상 용량 <b id="rEst">—</b></span>
-        <span class="ph-sp"></span>
-        <span class="kbd-hint">I = 시작, O = 끝, Space = 재생/멈춤, ← → = 한 프레임</span>
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.format"></div>
+        <div class="seg" id="formatSeg">
+          <button class="seg-b active" data-v="gif">GIF</button>
+          <button class="seg-b" data-v="webp">WebP</button>
+          <button class="seg-b" data-v="mp4">MP4</button>
+        </div>
+        <label class="row"><span data-i18n="out.width"></span>
+          <input type="range" id="optWidth" min="160" max="1280" step="20" value="480">
+          <output id="optWidthOut">480</output>
+        </label>
+        <label class="row"><span data-i18n="out.fps"></span>
+          <input type="range" id="optFps" min="4" max="30" step="1" value="10">
+          <output id="optFpsOut">10</output>
+        </label>
+        <label class="row opt" data-for="colors"><span data-i18n="out.colors"></span>
+          <input type="range" id="optColors" min="8" max="256" step="8" value="128">
+          <output id="optColorsOut">128</output>
+        </label>
+        <label class="row opt" data-for="dither"><span data-i18n="out.dither"></span>
+          <select id="optDither"></select>
+        </label>
+        <label class="row opt" data-for="quality" hidden><span data-i18n="out.quality"></span>
+          <input type="range" id="optQuality" min="10" max="100" step="5" value="75">
+          <output id="optQualityOut">75</output>
+        </label>
+        <label class="row opt" data-for="crf" hidden><span data-i18n="out.crf"></span>
+          <input type="range" id="optCrf" min="16" max="40" step="1" value="23">
+          <output id="optCrfOut">23</output>
+        </label>
+        <p class="hint" id="formatHint"></p>
       </div>
 
+      <div class="grp">
+        <div class="grp-title" data-i18n="out.fit"></div>
+        <div class="row">
+          <button id="btnFit" class="btn tiny toggle" data-i18n="out.fitOn"></button>
+          <label class="mini"><span data-i18n="out.target"></span>
+            <input type="number" id="optTarget" min="0.2" max="200" step="0.5" value="5"></label>
+          <span class="dim">MB</span>
+        </div>
+        <p class="hint" data-i18n="out.fitHint"></p>
+      </div>
     </div>
+
+    <!-- ── 변형 ── -->
+    <div class="tabbody" id="tab-tf" hidden>
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.crop"></div>
+        <div class="row">
+          <button id="btnCrop2" class="btn toggle" data-i18n="tf.cropOn"></button>
+          <button id="btnCropClear2" class="btn ghost" data-i18n="tf.cropClear"></button>
+        </div>
+        <div class="row"><span data-i18n="tf.cropNow"></span><span id="cropInfo" class="num">—</span></div>
+        <p class="hint" data-i18n="tf.cropHint"></p>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.motion"></div>
+        <label class="row"><span data-i18n="tf.speed"></span>
+          <input type="range" id="optSpeed" min="0" max="7" step="1" value="2">
+          <output id="optSpeedOut">1×</output>
+        </label>
+        <div class="seg" id="dirSeg">
+          <button class="seg-b active" data-v="normal" data-i18n="tf.fwd"></button>
+          <button class="seg-b" data-v="reverse" data-i18n="tf.rev"></button>
+          <button class="seg-b" data-v="pingpong" data-i18n="tf.pp"></button>
+        </div>
+        <label class="row"><span data-i18n="tf.fade"></span>
+          <input type="range" id="optFade" min="0" max="1.5" step="0.1" value="0">
+          <output id="optFadeOut">0</output>
+        </label>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="tf.rotate"></div>
+        <div class="seg" id="rotSeg">
+          <button class="seg-b active" data-v="auto" data-i18n="tf.auto"></button>
+          <button class="seg-b" data-v="90">90&deg;</button>
+          <button class="seg-b" data-v="180">180&deg;</button>
+          <button class="seg-b" data-v="270">270&deg;</button>
+        </div>
+        <p class="hint" data-i18n="tf.rotateHint"></p>
+      </div>
+    </div>
+
+    <!-- ── 꾸미기 ── -->
+    <div class="tabbody" id="tab-deco" hidden>
+      <div class="grp">
+        <div class="grp-title" data-i18n="deco.text"></div>
+        <label class="row"><input type="text" id="optText" maxlength="60" data-i18n-ph="deco.textPh"></label>
+        <div class="seg" id="textPosSeg">
+          <button class="seg-b" data-v="top-left" data-i18n="deco.tl"></button>
+          <button class="seg-b" data-v="top-right" data-i18n="deco.tr"></button>
+          <button class="seg-b active" data-v="bottom-left" data-i18n="deco.bl"></button>
+          <button class="seg-b" data-v="bottom-right" data-i18n="deco.br"></button>
+        </div>
+        <label class="row"><span data-i18n="deco.size"></span>
+          <input type="range" id="optTextSize" min="10" max="72" step="2" value="24">
+          <output id="optTextSizeOut">24</output>
+        </label>
+        <label class="row"><span data-i18n="deco.pad"></span>
+          <input type="range" id="optTextPad" min="0" max="60" step="2" value="16">
+          <output id="optTextPadOut">16</output>
+        </label>
+        <p class="hint" data-i18n="deco.textHint"></p>
+      </div>
+
+      <div class="grp">
+        <div class="grp-title" data-i18n="deco.logo"></div>
+        <label class="row"><input type="file" id="logoFile" accept="image/png,image/webp,image/jpeg"></label>
+        <div id="logoRow" class="logorow" hidden>
+          <img id="logoPrev" alt="">
+          <span id="logoName" class="ellip"></span>
+          <button id="btnLogoClear" class="btn tiny ghost" data-i18n="deco.logoClear"></button>
+        </div>
+        <div class="seg" id="logoPosSeg">
+          <button class="seg-b" data-v="top-left" data-i18n="deco.tl"></button>
+          <button class="seg-b" data-v="top-right" data-i18n="deco.tr"></button>
+          <button class="seg-b" data-v="bottom-left" data-i18n="deco.bl"></button>
+          <button class="seg-b active" data-v="bottom-right" data-i18n="deco.br"></button>
+        </div>
+        <label class="row"><span data-i18n="deco.logoSize"></span>
+          <input type="range" id="optLogoSize" min="5" max="50" step="1" value="18">
+          <output id="optLogoSizeOut">18</output>
+        </label>
+        <label class="row"><span data-i18n="deco.pad"></span>
+          <input type="range" id="optLogoPad" min="0" max="60" step="2" value="16">
+          <output id="optLogoPadOut">16</output>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── 결과 ── -->
+    <div class="tabbody" id="tab-res" hidden>
+      <div id="resEmpty" class="hint" data-i18n="res.empty"></div>
+      <div id="resList"></div>
+      <div class="row" id="resFoot" hidden>
+        <button id="btnResClear" class="btn tiny ghost" data-i18n="res.clear"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="bottombar">
+  <button id="btnPlay" class="btn ghost" data-i18n-title="bar.play" disabled>&#9654;</button>
+  <button id="btnHome" class="btn ghost" data-i18n-title="bar.home" disabled>&#9198;</button>
+  <span id="clock" class="dim num">0:00.0 / 0:00.0</span>
+  <button id="btnLoop" class="btn tiny toggle on" data-i18n="bar.loop" disabled></button>
+  <span class="sep"></span>
+  <button id="btnIn" class="btn tiny" data-i18n="bar.in" disabled></button>
+  <button id="btnOut" class="btn tiny" data-i18n="bar.out" disabled></button>
+  <span class="sep"></span>
+  <button id="btnAddClip" class="btn" data-i18n="bar.addClip" disabled></button>
+  <button id="btnRun" class="btn primary" data-i18n="bar.run" disabled></button>
+  <button id="btnRunAll" class="btn accent" data-i18n="bar.runAll" disabled></button>
+  <button id="btnCancel" class="btn danger" data-i18n="bar.cancel" hidden></button>
+  <span class="spacer"></span>
+  <div id="progressWrap" hidden>
+    <div id="progressBar"><i></i></div>
+    <span id="progressText" class="dim"></span>
   </div>
-
-  <!-- ══════════ 오른쪽: 도구 ══════════ -->
-  <div class="pan" id="panR">
-    <div class="tabs" id="tabs">
-      <button class="tab on" data-tab="out"><i class="fa-solid fa-sliders"></i> 출력</button>
-      <button class="tab" data-tab="tf"><i class="fa-solid fa-crop-simple"></i> 변형</button>
-      <button class="tab" data-tab="deco"><i class="fa-solid fa-font"></i> 꾸미기</button>
-      <button class="tab" data-tab="res"><i class="fa-solid fa-box-open"></i> 결과</button>
-    </div>
-    <div class="pb" id="tabBody">
-
-      <!-- ── 출력 ── -->
-      <section class="tp on" data-tab="out">
-        <div class="pb-label">프리셋</div>
-        <div class="presets" id="presetBtns"></div>
-
-        <div class="sec2">
-          <div class="fld"><label>형식</label>
-            <div class="segbtns" id="fmtBtns">
-              <button class="db sm" data-fmt="gif">GIF</button>
-              <button class="db sm" data-fmt="webp">WebP</button>
-              <button class="db sm" data-fmt="mp4">MP4</button>
-            </div>
-          </div>
-          <div class="fld"><label>가로 크기</label>
-            <input class="rng" type="range" id="wRange" min="160" max="1280" step="20">
-            <output class="num" id="wOut">480</output>
-          </div>
-          <div class="fld"><label>프레임률</label>
-            <input class="rng" type="range" id="fpsRange" min="4" max="30" step="1">
-            <output class="num" id="fpsOut">10</output>
-          </div>
-          <div class="fld" id="fldColors"><label>색 수</label>
-            <input class="rng" type="range" id="colRange" min="8" max="256" step="8">
-            <output class="num" id="colOut">128</output>
-          </div>
-          <div class="fld" id="fldDither"><label>디더링</label>
-            <select class="inp" id="ditherSel"></select>
-          </div>
-          <div class="fld" id="fldQuality"><label>품질</label>
-            <input class="rng" type="range" id="qRange" min="10" max="100" step="5">
-            <output class="num" id="qOut">75</output>
-          </div>
-          <div class="fld" id="fldCrf"><label>화질 (CRF, 낮을수록 좋음)</label>
-            <input class="rng" type="range" id="crfRange" min="16" max="40" step="1">
-            <output class="num" id="crfOut">23</output>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <button class="db sm" id="presetSave"><i class="fa-solid fa-floppy-disk"></i> 지금 값으로 프리셋 저장</button>
-            <button class="db sm danger" id="presetReset" title="프리셋 되돌리기"><i class="fa-solid fa-rotate-left"></i></button>
-          </div>
-        </div>
-
-        <div class="sec2">
-          <label class="chk"><input type="checkbox" id="fitChk"> <span>목표 용량 맞추기</span></label>
-          <div class="fld" id="fldTarget"><label>목표</label>
-            <input class="inp sz" type="number" id="targetMB" min="0.2" max="200" step="0.5"> <span class="unit">MB</span>
-          </div>
-          <div class="hint">목표 용량을 넘으면 프레임률 → 해상도 → 색 수 순으로 낮춰 다시 굽습니다 (최대 3회).</div>
-        </div>
-      </section>
-
-      <!-- ── 변형 ── -->
-      <section class="tp" data-tab="tf">
-        <div class="pb-label">크롭</div>
-        <div class="hint" style="margin-top:0">박스를 끌어 자릅니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.</div>
-        <div class="row" style="margin-top:8px">
-          <button class="db sm" id="cropToggle2" style="flex:1;justify-content:center"><i class="fa-solid fa-crop-simple"></i> 크롭 켜기</button>
-          <button class="db sm" id="cropClear2" title="크롭 지우기"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="info-row" style="margin-top:6px"><span>크롭</span><span class="info-val" id="cropInfo">전체</span></div>
-
-        <div class="sec2">
-          <div class="fld"><label>배속</label>
-            <input class="rng" type="range" id="spdRange" min="0" max="7" step="1">
-            <output class="num" id="spdOut">1×</output>
-          </div>
-          <div class="fld"><label>재생 방향</label>
-            <div class="segbtns col" id="dirBtns">
-              <button class="db sm on" data-dir="normal"><i class="fa-solid fa-forward"></i> 정방향</button>
-              <button class="db sm" data-dir="reverse"><i class="fa-solid fa-backward"></i> 역재생</button>
-              <button class="db sm" data-dir="pingpong"><i class="fa-solid fa-right-left"></i> 핑퐁 (정→역)</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="sec2">
-          <div class="fld"><label>회전</label>
-            <div class="segbtns" id="rotBtns">
-              <button class="db sm on" data-rot="auto">자동</button>
-              <button class="db sm" data-rot="90">90°</button>
-              <button class="db sm" data-rot="180">180°</button>
-              <button class="db sm" data-rot="270">270°</button>
-            </div>
-          </div>
-          <div class="hint">회전은 보통 자동으로 맞습니다. 폰 영상이 옆으로 누워 나오면 직접 고르세요.</div>
-        </div>
-
-        <div class="sec2">
-          <div class="fld"><label>페이드 인/아웃</label>
-            <input class="rng" type="range" id="fadeRange" min="0" max="1.5" step="0.1">
-            <output class="num" id="fadeOut">없음</output>
-          </div>
-        </div>
-      </section>
-
-      <!-- ── 꾸미기 ── -->
-      <section class="tp" data-tab="deco">
-        <div class="pb-label">글자 한 줄</div>
-        <input class="inp" type="text" id="textInput" maxlength="60" placeholder="예: 파이보가 인사합니다">
-        <div class="fld" style="margin-top:8px"><label>위치</label>
-          <div class="segbtns grid2" id="textPosBtns">
-            <button class="db sm" data-pos="top-left">왼쪽 위</button>
-            <button class="db sm" data-pos="top-right">오른쪽 위</button>
-            <button class="db sm on" data-pos="bottom-left">왼쪽 아래</button>
-            <button class="db sm" data-pos="bottom-right">오른쪽 아래</button>
-          </div>
-        </div>
-        <div class="fld"><label>글자 크기</label>
-          <input class="rng" type="range" id="tsRange" min="10" max="72" step="2">
-          <output class="num" id="tsOut">24</output>
-        </div>
-        <div class="fld"><label>여백</label>
-          <input class="rng" type="range" id="tpRange" min="0" max="60" step="2">
-          <output class="num" id="tpOut">16</output>
-        </div>
-
-        <div class="sec2">
-          <div class="pb-label">로고</div>
-          <label class="db sm" for="logoInput" style="width:100%;justify-content:center">
-            <i class="fa-solid fa-image"></i> 로고 그림 고르기 (PNG)
-          </label>
-          <input type="file" id="logoInput" accept="image/png,image/webp,image/jpeg">
-          <div class="logorow" id="logoRow" style="display:none">
-            <img id="logoPrev" alt="">
-            <span id="logoName"></span>
-            <button class="db sm danger" id="logoClear" title="로고 지우기"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="fld"><label>위치</label>
-            <div class="segbtns grid2" id="logoPosBtns">
-              <button class="db sm" data-pos="top-left">왼쪽 위</button>
-              <button class="db sm" data-pos="top-right">오른쪽 위</button>
-              <button class="db sm" data-pos="bottom-left">왼쪽 아래</button>
-              <button class="db sm on" data-pos="bottom-right">오른쪽 아래</button>
-            </div>
-          </div>
-          <div class="fld"><label>로고 크기</label>
-            <input class="rng" type="range" id="lsRange" min="5" max="50" step="1">
-            <output class="num" id="lsOut">18%</output>
-          </div>
-          <div class="fld"><label>여백</label>
-            <input class="rng" type="range" id="lpRange" min="0" max="60" step="2">
-            <output class="num" id="lpOut">16</output>
-          </div>
-        </div>
-      </section>
-
-      <!-- ── 결과 ── -->
-      <section class="tp" data-tab="res">
-        <div id="resEmpty" class="emptybox">
-          <img src="assets/img/pibo-idea.png" alt="">
-          <span>결과가 여기에 나와요</span>
-        </div>
-        <div id="resList"></div>
-      </section>
-
-    </div>
-
-    <!-- 굽기 버튼 + 진행률 -->
-    <div id="runbar">
-      <div class="prg" id="prg" style="display:none">
-        <div class="lb"><span id="prgLabel">준비하는 중</span><span id="prgPct">0%</span></div>
-        <div class="track"><div class="fill" id="prgFill"></div></div>
-      </div>
-      <div class="row">
-        <button class="db go" id="runBtn" disabled style="flex:1;justify-content:center;padding:11px">
-          <i class="fa-solid fa-fire"></i> 이 구간 굽기
-        </button>
-        <button class="db warn" id="cancelBtn" style="display:none;justify-content:center;padding:11px">
-          <i class="fa-solid fa-stop"></i> 취소
-        </button>
-      </div>
-      <div class="hint" id="runHint">먼저 영상을 불러오세요</div>
-    </div>
-  </div>
-
-</div>
-
-<footer>
-  <i class="fa-solid fa-lock"></i>
-  <b>영상은 브라우저 밖으로 나가지 않습니다</b>
-  <span>모든 변환은 이 컴퓨터 안에서 ffmpeg.wasm 으로 처리합니다. 업로드도, 서버도 없습니다.</span>
-  <span class="ph-sp"></span>
-  <a href="https://github.com/leeyunjai82/clip-box" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> GitHub</a>
 </footer>
 
-<!-- 코어 로드 덮개 -->
-<div id="coreOverlay">
-  <img class="load-char" src="assets/img/pibo-hello.png" alt="">
-  <div class="load-title" id="coreTitle">코어 받는 중</div>
-  <div class="pbar-bg"><div class="pbar-fill" id="coreFill"></div></div>
-  <div class="pbar-text" id="coreText">0 / 32 MB</div>
-  <div class="pbar-text dim">ffmpeg.wasm · 한 번만 받으면 다음부터는 바로 켜집니다</div>
+<div id="toasts"></div>
+
+<div id="busy" hidden>
+  <div class="spin"></div>
+  <div id="busyBody">
+    <div id="busyText"></div>
+    <div id="busyBar" class="busybar" hidden><i></i></div>
+    <div id="busySub" class="dim"></div>
+  </div>
 </div>
 
 <script src="vendor/jszip.min.js"></script>
-<script type="module" src="js/app.js?v=1"></script>
+<script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>
