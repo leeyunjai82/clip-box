@@ -119,6 +119,8 @@ export async function setVideo(url, over) {
   $('cropBar').hidden = true;
   $('videoBox').classList.add('on');
   $('stageEmpty').hidden = true;
+  // 영상이 없을 때 빈 필름스트립 캔버스가 회색 상자로 떠 보여서, 통째로 감춰 둔다
+  $('stageFoot').hidden = false;
 
   layout();
   buildThumbs().catch(() => {});
@@ -134,6 +136,7 @@ export function clearVideo() {
   TL.duration = 0; TL.start = 0; TL.end = 0; TL.crop = null; TL.cropOn = false;
   $('videoBox').classList.remove('on');
   $('stageEmpty').hidden = false;
+  $('stageFoot').hidden = true;
   $('cropLayer').hidden = true;
   $('cropBar').hidden = true;
 }

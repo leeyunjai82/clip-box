@@ -175,6 +175,17 @@ clip-box/
 기준은 [`docs/DESIGN.md`](docs/DESIGN.md) 에 적어 두었고, `css/base.css` 는 두 도구가
 같은 내용을 씁니다. 새 도구를 만들 때도 이 두 파일부터 가져다 씁니다.
 
+눈으로만 맞춘 것이 아니라 두 도구를 나란히 띄워 `getComputedStyle` 로 재서 맞췄습니다.
+
+| 대조한 것 | 결과 |
+|---|---|
+| 색·크기 토큰 14개 | 전부 일치 |
+| 공통 부품 계산된 스타일 39종 | 전부 일치 |
+| `base.css` ↔ snap-box `style.css` 공통 선택자 92개 | 값 전부 일치 |
+| 동봉 웹폰트 | 둘 다 0개 |
+
+![snap-box / clip-box 빈 화면](docs/screenshot-empty.png)
+
 ---
 
 ## 쓴 라이브러리 · 라이선스

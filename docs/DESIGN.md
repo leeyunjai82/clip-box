@@ -122,8 +122,10 @@ Font Awesome 같은 아이콘 폰트를 넣지 않는다. 버튼은 **글자 라
 
 - 탭은 **4개로 고정**이다 (`grid-template-columns:repeat(4,1fr)`). 더 필요하면 묶어서 줄인다.
 - 실행 버튼은 오른쪽 패널이 아니라 **아래 바**에 둔다. 탭을 옮겨도 늘 같은 자리에 있어야 한다.
-- 폭은 토큰(`--w-queue`, `--w-tool`)으로만 바꾼다. 도구 사정으로 바꿨으면 `style.css`
-  맨 위에 **왜 바꿨는지 주석을 남긴다.**
+- 폭 토큰(`--w-queue`, `--w-tool`)은 **되도록 건드리지 않는다.** 좁아 보이면 먼저
+  내용을 줄여 본다 — clip-box 는 영상 정보를 이름/값 두 칸(`<dl>`)으로 짜서
+  `--w-queue:210px` 그대로 들어갔다. 그래도 못 맞추겠으면 바꾸되 `style.css` 맨 위에
+  **왜 바꿨는지, 무엇을 먼저 시도했는지** 주석으로 남긴다.
 - 데스크톱 전용이다. `<meta name="viewport" content="width=1280">`. 모바일 대응은 하지 않는다.
 
 ---
@@ -243,6 +245,26 @@ clip-box 는 `#stagePane` 밑에 **타임라인**(`#stageFoot`)을 더했다.
 4. 취소/실패 뒤에 다시 되는지
 5. 한 → 영 전환 뒤에도 화면이 안 깨지는지
 6. 빈 상태 · 작업 중 · 결과 있음 세 장면 스크린샷
+
+### 디자인 대조도 자동으로
+
+"같아 보인다" 는 눈으로 믿지 말고 재야 한다. 두 도구를 나란히 띄워
+`getComputedStyle` 로 공통 부품의 값을 비교한다. 재는 것:
+
+- **토큰 14개** — `--bg` `--pane` `--line` `--accent` … `--h-top` `--h-bot` `--w-tool`
+- **공통 부품 39개** — `body` `#topbar` `.privacy` `#layout` `.pane-head` `.badge`
+  `#dropZone` `#stageHead` `#tabs` `.tab` `.grp` `.row` `.hint` `.btn`(변형별)
+  `.seg` `.seg-b` `#bottombar` `#progressBar` `.toast` `#busy` `.spin`
+- **동봉 웹폰트 개수** (둘 다 0이어야 한다)
+
+부품을 집을 때 **선택자를 정확히 쓴다.** `.btn` 으로 첫 요소를 집으면 한쪽은
+`.btn.primary`, 다른 쪽은 `.btn.tiny.ghost` 가 잡혀서 없는 차이가 보인다.
+변형이 안 붙은 것을 집어야 한다
+(`button.btn:not(.primary):not(.accent):not(.ghost):not(.tiny)`).
+`.row` 도 `:last-child{margin-bottom:0}` 때문에 마지막이 아닌 것을 집어야 한다.
+
+**마지막 대조 결과 (2026-09): 53 항목 일치 / 0 불일치.**
+`css/base.css` 와 snap-box `css/style.css` 의 공통 선택자 92개도 값이 전부 같다.
 
 ---
 
