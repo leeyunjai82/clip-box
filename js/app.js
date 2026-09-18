@@ -261,6 +261,7 @@ window.ClipBox = window.ClipBox || {};
   // ═══════════════════════════════════════════════════════════
   function wireFile() {
     var input = $('#fileInput'), zone = $('#dropZone');
+    $('#btnFileClear').addEventListener('click', function (e) { e.stopPropagation(); clearFile(); });
     zone.addEventListener('click', function (e) {
       if (e.target !== input) input.click();
     });
@@ -312,6 +313,9 @@ window.ClipBox = window.ClipBox || {};
       madeProxy = true;
       return buildProxy();
     }).then(function (meta) {
+      $('#fileRow').hidden = false;
+      $('#fileName').textContent = file.name;
+      $('#fileName').title = file.name;
       $('#fileCard').hidden = false;
       $('#fileDur').textContent = fmtTime(meta.duration);
       $('#fileDims').textContent = meta.w + '×' + meta.h;
@@ -333,14 +337,39 @@ window.ClipBox = window.ClipBox || {};
       }
     }).catch(function () {
       toast(T('영상을 읽지 못했습니다. 다른 파일로 해 보세요'));
-      TLM.clearVideo();
-      $('#fileCard').hidden = true;
-      $('#dropZone').classList.remove('slim');
-      $('#stageName').textContent = T('미리보기');
-      $('#stageDims').textContent = '';
       S.file = null;
-      refreshEnabled();
+      resetStage();
     });
+  }
+
+  /** 넣은 영상을 뺍니다. 담아 둔 구간도 그 영상 것이므로 같이 없어집니다. */
+  function clearFile() {
+    if (S.busy || !S.file) return;
+    if (S.clips.length &&
+        !confirm(TF('담아 둔 구간 {n}개도 같이 없어집니다. 영상을 뺄까요?', { n:S.clips.length }))) return;
+    S.file = null;
+    resetStage();
+    toast(T('영상을 뺐습니다'));
+  }
+
+  /** 영상이 없는 처음 상태로 되돌립니다 */
+  function resetStage() {
+    if (S.url) URL.revokeObjectURL(S.url);
+    if (S.proxyURL) URL.revokeObjectURL(S.proxyURL);
+    S.url = null; S.proxyURL = null; S.usingProxy = false;
+    S.inputWritten = false;
+    S.clips = []; S.activeClip = null; S.seq = 0;
+    TLM.clearVideo();
+    $('#fileRow').hidden = true;
+    $('#fileCard').hidden = true;
+    $('#bigNote').hidden = true;
+    $('#dropZone').classList.remove('slim');
+    $('#stageName').textContent = T('미리보기');
+    $('#stageName').title = '';
+    $('#stageDims').textContent = '';
+    renderClips();
+    onRangeChange();
+    refreshEnabled();
   }
 
   /** 미리보기용 대역 영상(VP8/WebM)을 만들어 겁니다 */
@@ -646,6 +675,7 @@ window.ClipBox = window.ClipBox || {};
     $('#btnRemoveSel').disabled = !S.clips.length || S.busy;
     $('#btnClearQueue').disabled = !S.clips.length || S.busy;
     $('#btnCropClear').disabled = !hasVideo || S.busy;
+    $('#btnFileClear').disabled = !S.file || S.busy;
     markDone();
   }
 

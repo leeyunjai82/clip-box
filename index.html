@@ -35,8 +35,13 @@
         <i class="fa-solid fa-plus"></i><br>영상을 여기에 놓거나 눌러서 고릅니다
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv">
       </div>
-      <div class="hint" id="queueHint">MP4 · MOV · WEBM을 받습니다. 브라우저가 못 읽는 코덱은 미리보기용 영상을 따로 만듭니다.</div>
+      <div class="hint" id="queueHint">MP4 · MOV · WEBM을 받습니다. 다시 놓으면 그 영상으로 바뀝니다.</div>
 
+      <div class="saved" id="fileRow" hidden>
+        <i class="fa-solid fa-film"></i>
+        <span class="nm" id="fileName"></span>
+        <button class="db danger" id="btnFileClear"><i class="fa-solid fa-xmark"></i>빼기</button>
+      </div>
       <div class="summary" id="fileCard" hidden>
         <div class="srow"><span class="sk">길이</span><span class="sv num" id="fileDur">—</span></div>
         <div class="srow"><span class="sk">크기</span><span class="sv num" id="fileDims">—</span></div>
@@ -48,8 +53,8 @@
       <div class="hint" id="queueEmpty">한 영상에서 여러 군데를 뽑을 때만 씁니다.</div>
     </div>
     <div class="pf">
-      <button class="db danger" id="btnRemoveSel"><i class="fa-solid fa-trash-can"></i>고른 것 빼기</button>
-      <button class="db danger" id="btnClearQueue">모두 비우기</button>
+      <button class="db danger" id="btnRemoveSel"><i class="fa-solid fa-trash-can"></i>고른 구간 빼기</button>
+      <button class="db danger" id="btnClearQueue">구간 모두 비우기</button>
     </div>
   </section>
 

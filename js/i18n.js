@@ -42,16 +42,17 @@ var GL_I18N = {
   // ── 왼쪽: 담아 둔 구간 ──
   '담아 둔 구간': 'Saved ranges',
   '영상을 여기에 놓거나 눌러서 고릅니다': 'Drop a video here, or click to choose',
-  'MP4 · MOV · WEBM을 받습니다. 브라우저가 못 읽는 코덱은 미리보기용 영상을 따로 만듭니다.':
-    'MP4, MOV and WEBM are accepted. For codecs this browser cannot decode, a preview copy is built.',
+  'MP4 · MOV · WEBM을 받습니다. 다시 놓으면 그 영상으로 바뀝니다.':
+    'MP4, MOV and WEBM are accepted. Drop another one and it replaces this video.',
   '길이': 'Length',
   '크기': 'Size',
   '용량': 'File size',
   '300MB가 넘습니다. 메모리가 모자라 실패할 수 있으니 폰에서 먼저 잘라 오세요.':
     'Over 300MB. It may fail from lack of memory — trim it on your phone first.',
   '한 영상에서 여러 군데를 뽑을 때만 씁니다.': 'Only needed when you want several parts of one video.',
-  '고른 것 빼기': 'Remove checked',
-  '모두 비우기': 'Clear all',
+  '고른 구간 빼기': 'Remove checked ranges',
+  '구간 모두 비우기': 'Clear all ranges',
+  '빼기': 'Remove',
 
   // ── 가운데 ──
   '미리보기': 'Preview',
@@ -111,7 +112,6 @@ var GL_I18N = {
     'A Korean font ships with the tool, so Hangul never turns into boxes.',
   '로고': 'Logo',
   '로고 그림 고르기': 'Choose a logo image',
-  '빼기': 'Remove',
 
   // ── 3. 크기·용량 ──
   '어디에 쓸 영상인가요': 'What is it for',
@@ -180,6 +180,7 @@ var GL_I18N = {
   '같은 구간이 이미 목록에 있습니다': 'That exact range is already in the list',
   '지금 화면을 사진으로 저장했습니다': 'Saved this frame as a photo',
   '목록을 비웠습니다': 'Cleared the list',
+  '영상을 뺐습니다': 'Removed the video',
   '기본값으로 되돌렸습니다': 'Reset to defaults',
   '메모리가 모자랍니다. 구간을 짧게 하거나 가로 크기를 줄여 보세요':
     'Out of memory. Try a shorter range or a smaller width',
@@ -196,6 +197,8 @@ var GL_I18N = {
   '{s}초쯤 남았습니다': 'About {s}s left',
   '체크한 {n}개를 뺄까요?': 'Remove the {n} checked clip(s)?',
   '목록을 모두 비울까요?': 'Clear the whole list?',
+  '담아 둔 구간 {n}개도 같이 없어집니다. 영상을 뺄까요?':
+    'The {n} saved range(s) go too. Remove the video?',
   '{n} / {total} MB': '{n} / {total} MB'
 };
 
