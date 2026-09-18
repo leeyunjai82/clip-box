@@ -27,9 +27,9 @@
 
 <div class="mk-main">
 
-  <!-- ── 왼쪽: 클립 목록 ────────────────────────────── -->
+  <!-- ── 왼쪽: 담아 둔 구간 ─────────────────────────── -->
   <section class="pan pan-side" id="panQueue">
-    <div class="ph"><i class="fa-solid fa-film"></i>클립 목록<span class="ph-count num" id="queueCount">0</span></div>
+    <div class="ph"><i class="fa-solid fa-film"></i>담아 둔 구간<span class="ph-count num" id="queueCount">0</span></div>
     <div class="pb">
       <div class="dropzone" id="dropZone">
         <i class="fa-solid fa-plus"></i><br>영상을 여기에 놓거나 눌러서 고릅니다
@@ -45,6 +45,7 @@
       <div class="hint" id="bigNote" hidden>300MB가 넘습니다. 메모리가 모자라 실패할 수 있으니 폰에서 먼저 잘라 오세요.</div>
 
       <div id="queueList"></div>
+      <div class="hint" id="queueEmpty">한 영상에서 여러 군데를 뽑을 때만 씁니다.</div>
     </div>
     <div class="pf">
       <button class="db danger" id="btnRemoveSel"><i class="fa-solid fa-trash-can"></i>고른 것 빼기</button>
@@ -75,7 +76,7 @@
       <div id="stageEmpty">
         <i class="fa-solid fa-shield-halved"></i>
         <p>영상은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
-        <span>왼쪽에 영상을 넣으면 여기에 나옵니다.</span>
+        <span>왼쪽에 영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.</span>
       </div>
     </div>
 
@@ -85,7 +86,7 @@
         <div id="tlTrack">
           <div id="tlDimA" class="tl-dim"></div>
           <div id="tlDimB" class="tl-dim"></div>
-          <div id="tlSel" title="끌면 길이를 유지한 채 구간이 통째로 움직입니다"></div>
+          <div id="tlSel" title="끌면 길이를 유지한 채 구간이 통째로 움직입니다"><span class="tl-len num" id="tlLen"></span></div>
           <div id="tlIn" class="tl-hand"><i></i></div>
           <div id="tlOut" class="tl-hand"><i></i></div>
           <div id="tlHead"></div>
@@ -103,32 +104,33 @@
 
       <!-- 1. 구간 고르기 -->
       <div class="tool" id="tool-range">
-        <div class="pb-label">구간</div>
-        <div class="summary">
-          <div class="srow"><span class="sk">시작</span><span class="sv num" id="rIn">0:00.0</span></div>
-          <div class="srow"><span class="sk">끝</span><span class="sv num" id="rOut">0:00.0</span></div>
-          <div class="srow"><span class="sk">길이</span><span class="sv num" id="rLen">0.0초</span></div>
-          <div class="srow"><span class="sk">예상</span><span class="sv num" id="rEst">—</span></div>
+        <div class="pb-label">얼마나 자를까요</div>
+        <div class="pickrow" id="lenPick">
+          <button class="db" data-v="3" disabled>3초</button>
+          <button class="db" data-v="5" disabled>5초</button>
+          <button class="db" data-v="10" disabled>10초</button>
+          <button class="db" data-v="all" disabled>전체</button>
         </div>
-        <div class="row" style="margin-top:8px">
-          <button class="db" id="btnIn" disabled><i class="fa-solid fa-right-to-bracket"></i>여기를 시작으로</button>
-          <button class="db" id="btnOut" disabled><i class="fa-solid fa-right-from-bracket"></i>여기를 끝으로</button>
-        </div>
-        <div class="hint">아래 필름에서 손잡이를 끌거나, 재생 중에 I·O 키로 잡습니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.</div>
+        <div class="hint">누르면 지금 시작점에서 그만큼 잡습니다.</div>
 
         <div class="sec2">
-          <div class="st">재생</div>
-          <div class="row">
-            <button class="db" id="btnPlay" disabled><i class="fa-solid fa-play"></i>재생</button>
-            <button class="db" id="btnHome" disabled title="구간 시작으로"><i class="fa-solid fa-backward-step"></i></button>
-            <button class="db on" id="btnLoop" disabled><i class="fa-solid fa-repeat"></i>구간 반복</button>
+          <div class="st">고른 구간</div>
+          <div class="summary">
+            <div class="srow"><span class="sk">시작</span><span class="sv num" id="rIn">0:00.0</span></div>
+            <div class="srow"><span class="sk">끝</span><span class="sv num" id="rOut">0:00.0</span></div>
+            <div class="srow"><span class="sk">길이</span><span class="sv num" id="rLen">0.0초</span></div>
+            <div class="srow"><span class="sk">예상</span><span class="sv num" id="rEst">—</span></div>
           </div>
-          <div class="hint">Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초</div>
+          <div class="row" style="margin-top:8px">
+            <button class="db" id="btnIn" disabled><i class="fa-solid fa-right-to-bracket"></i>여기를 시작으로</button>
+            <button class="db" id="btnOut" disabled><i class="fa-solid fa-right-from-bracket"></i>여기를 끝으로</button>
+          </div>
+          <div class="hint">아래 필름에서 파란 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.</div>
         </div>
 
         <div class="sec2">
-          <div class="st">한 장으로</div>
-          <button class="db" id="btnStill" style="width:100%;justify-content:center" disabled><i class="fa-solid fa-camera"></i>지금 프레임을 PNG로</button>
+          <div class="st">사진 한 장</div>
+          <button class="db" id="btnStill" style="width:100%;justify-content:center" disabled><i class="fa-solid fa-camera"></i>지금 화면을 사진으로</button>
         </div>
       </div>
 
@@ -147,7 +149,7 @@
           <button class="db" data-v="0.5625">9:16</button>
         </div>
         <div class="summary" style="margin-top:6px">
-          <div class="srow"><span class="sk">지금</span><span class="sv num" id="cropInfo">전체</span></div>
+          <div class="srow"><span class="sk">지금</span><span class="sv num" id="cropInfo">원본 그대로</span></div>
         </div>
         <div class="hint">영상 위를 끌어 칸을 그립니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.</div>
 
@@ -167,125 +169,141 @@
         </div>
 
         <div class="sec2">
-          <div class="st">회전 · 페이드</div>
-          <div class="pickrow" id="rotPick">
-            <button class="db on" data-v="auto">자동</button>
-            <button class="db" data-v="90">90°</button>
-            <button class="db" data-v="180">180°</button>
-            <button class="db" data-v="270">270°</button>
-          </div>
-          <div class="rangerow">
-            <label for="optFade">페이드</label>
-            <input type="range" id="optFade" min="0" max="1.5" step="0.1" value="0">
-            <output class="num" id="optFadeOut">0</output>
-          </div>
-          <div class="hint">회전은 대개 자동으로 맞습니다. 폰 영상이 옆으로 누워 나올 때만 직접 고릅니다.</div>
-        </div>
+          <button class="db fold" data-fold="moreTrim"><i class="fa-solid fa-chevron-right"></i>회전 · 페이드 · 글자 · 로고</button>
+          <div id="moreTrim" hidden>
 
-        <div class="sec2">
-          <div class="st">글자 한 줄</div>
-          <input class="inp" type="text" id="optText" maxlength="60" placeholder="예: 파이보가 인사합니다" style="width:100%">
-          <div class="pickrow" id="textPosPick" style="margin-top:7px">
-            <button class="db" data-v="top-left">왼위</button>
-            <button class="db" data-v="top-right">오른위</button>
-            <button class="db on" data-v="bottom-left">왼아래</button>
-            <button class="db" data-v="bottom-right">오른아래</button>
-          </div>
-          <div class="rangerow">
-            <label for="optTextSize">글자</label>
-            <input type="range" id="optTextSize" min="10" max="72" step="2" value="24">
-            <output class="num" id="optTextSizeOut">24</output>
-          </div>
-          <div class="rangerow">
-            <label for="optTextPad">여백</label>
-            <input type="range" id="optTextPad" min="0" max="60" step="2" value="16">
-            <output class="num" id="optTextPadOut">16</output>
-          </div>
-          <div class="hint">한글 글꼴을 함께 넣어 두어 글자가 깨지지 않습니다.</div>
-        </div>
+            <div class="st" style="margin-top:11px">회전 · 페이드</div>
+            <div class="pickrow" id="rotPick">
+              <button class="db on" data-v="auto">자동</button>
+              <button class="db" data-v="90">90°</button>
+              <button class="db" data-v="180">180°</button>
+              <button class="db" data-v="270">270°</button>
+            </div>
+            <div class="rangerow">
+              <label for="optFade">페이드</label>
+              <input type="range" id="optFade" min="0" max="1.5" step="0.1" value="0">
+              <output class="num" id="optFadeOut">0</output>
+            </div>
+            <div class="hint">회전은 대개 자동으로 맞습니다. 폰 영상이 옆으로 누워 나올 때만 직접 고릅니다.</div>
 
-        <div class="sec2">
-          <div class="st">로고</div>
-          <label class="db filebtn" for="logoFile"><i class="fa-solid fa-image"></i>로고 그림 고르기</label>
-          <input type="file" id="logoFile" accept="image/png,image/webp,image/jpeg">
-          <div class="saved" id="logoRow" hidden>
-            <img id="logoPrev" alt="">
-            <span class="nm" id="logoName"></span>
-            <button class="db danger" id="btnLogoClear">빼기</button>
-          </div>
-          <div class="pickrow" id="logoPosPick" style="margin-top:7px">
-            <button class="db" data-v="top-left">왼위</button>
-            <button class="db" data-v="top-right">오른위</button>
-            <button class="db" data-v="bottom-left">왼아래</button>
-            <button class="db on" data-v="bottom-right">오른아래</button>
-          </div>
-          <div class="rangerow">
-            <label for="optLogoSize">크기</label>
-            <input type="range" id="optLogoSize" min="5" max="50" step="1" value="18">
-            <output class="num" id="optLogoSizeOut">18</output>
+            <div class="st" style="margin-top:14px">글자 한 줄</div>
+            <input class="inp" type="text" id="optText" maxlength="60" placeholder="예: 파이보가 인사합니다" style="width:100%">
+            <div class="pickrow" id="textPosPick" style="margin-top:7px">
+              <button class="db" data-v="top-left">왼위</button>
+              <button class="db" data-v="top-right">오른위</button>
+              <button class="db on" data-v="bottom-left">왼아래</button>
+              <button class="db" data-v="bottom-right">오른아래</button>
+            </div>
+            <div class="rangerow">
+              <label for="optTextSize">글자</label>
+              <input type="range" id="optTextSize" min="10" max="72" step="2" value="24">
+              <output class="num" id="optTextSizeOut">24</output>
+            </div>
+            <div class="rangerow">
+              <label for="optTextPad">여백</label>
+              <input type="range" id="optTextPad" min="0" max="60" step="2" value="16">
+              <output class="num" id="optTextPadOut">16</output>
+            </div>
+            <div class="hint">한글 글꼴을 함께 넣어 두어 글자가 깨지지 않습니다.</div>
+
+            <div class="st" style="margin-top:14px">로고</div>
+            <label class="db filebtn" for="logoFile"><i class="fa-solid fa-image"></i>로고 그림 고르기</label>
+            <input type="file" id="logoFile" accept="image/png,image/webp,image/jpeg">
+            <div class="saved" id="logoRow" hidden>
+              <img id="logoPrev" alt="">
+              <span class="nm" id="logoName"></span>
+              <button class="db danger" id="btnLogoClear">빼기</button>
+            </div>
+            <div class="pickrow" id="logoPosPick" style="margin-top:7px">
+              <button class="db" data-v="top-left">왼위</button>
+              <button class="db" data-v="top-right">오른위</button>
+              <button class="db" data-v="bottom-left">왼아래</button>
+              <button class="db on" data-v="bottom-right">오른아래</button>
+            </div>
+            <div class="rangerow">
+              <label for="optLogoSize">크기</label>
+              <input type="range" id="optLogoSize" min="5" max="50" step="1" value="18">
+              <output class="num" id="optLogoSizeOut">18</output>
+            </div>
+
           </div>
         </div>
       </div>
 
       <!-- 3. 크기·용량 -->
       <div class="tool" id="tool-size" hidden>
-        <div class="pb-label">어디에 쓰는 영상인가요</div>
+        <div class="pb-label">어디에 쓸 영상인가요</div>
         <div class="pickrow" id="presetPick"></div>
         <div class="namepv mono" id="presetPv">480px · 10fps · GIF</div>
-        <div class="row" style="margin-top:8px">
-          <button class="db" id="btnPresetSave"><i class="fa-solid fa-floppy-disk"></i>지금 값으로 저장</button>
-          <button class="db danger" id="btnPresetReset">기본값으로</button>
-        </div>
 
         <div class="sec2">
-          <div class="st">형식 · 화질</div>
+          <div class="st">크기</div>
+          <div class="pickrow" id="sizePick">
+            <button class="db" data-v="360">작게</button>
+            <button class="db on" data-v="480">보통</button>
+            <button class="db" data-v="720">크게</button>
+          </div>
+
+          <div class="st" style="margin-top:12px">형식</div>
           <div class="pickrow" id="formatPick">
             <button class="db on" data-v="gif">GIF</button>
             <button class="db" data-v="webp">WebP</button>
             <button class="db" data-v="mp4">MP4</button>
           </div>
-          <div class="rangerow">
-            <label for="optWidth">가로</label>
-            <input type="range" id="optWidth" min="160" max="1280" step="20" value="480">
-            <output class="num" id="optWidthOut">480</output>
-          </div>
-          <div class="rangerow">
-            <label for="optFps">프레임</label>
-            <input type="range" id="optFps" min="4" max="30" step="1" value="10">
-            <output class="num" id="optFpsOut">10</output>
-          </div>
-          <div class="rangerow opt" data-for="colors">
-            <label for="optColors">색 수</label>
-            <input type="range" id="optColors" min="8" max="256" step="8" value="128">
-            <output class="num" id="optColorsOut">128</output>
-          </div>
-          <div class="fieldrow opt" data-for="dither">
-            <label for="optDither">디더링</label>
-            <select class="inp" id="optDither"></select>
-          </div>
-          <div class="rangerow opt" data-for="quality" hidden>
-            <label for="optQuality">품질</label>
-            <input type="range" id="optQuality" min="10" max="100" step="5" value="75">
-            <output class="num" id="optQualityOut">75</output>
-          </div>
-          <div class="rangerow opt" data-for="crf" hidden>
-            <label for="optCrf">CRF</label>
-            <input type="range" id="optCrf" min="16" max="40" step="1" value="23">
-            <output class="num" id="optCrfOut">23</output>
-          </div>
           <div class="hint" id="formatHint"></div>
         </div>
 
         <div class="sec2">
-          <div class="st">목표 용량</div>
-          <div class="row">
-            <button class="db" id="btnFit">맞추기</button>
-            <div class="fieldrow" style="margin:0;flex:1">
-              <input class="inp" type="number" id="optTarget" min="0.2" max="200" step="0.5" value="5">
-              <span class="unit">MB</span>
+          <button class="db fold" data-fold="moreSize"><i class="fa-solid fa-chevron-right"></i>가로 · 프레임 · 화질 · 목표 용량</button>
+          <div id="moreSize" hidden>
+
+            <div class="rangerow" style="margin-top:11px">
+              <label for="optWidth">가로</label>
+              <input type="range" id="optWidth" min="160" max="1280" step="20" value="480">
+              <output class="num" id="optWidthOut">480</output>
             </div>
+            <div class="rangerow">
+              <label for="optFps">프레임</label>
+              <input type="range" id="optFps" min="4" max="30" step="1" value="10">
+              <output class="num" id="optFpsOut">10</output>
+            </div>
+            <div class="rangerow opt" data-for="colors">
+              <label for="optColors">색 수</label>
+              <input type="range" id="optColors" min="8" max="256" step="8" value="128">
+              <output class="num" id="optColorsOut">128</output>
+            </div>
+            <div class="fieldrow opt" data-for="dither">
+              <label for="optDither">디더링</label>
+              <select class="inp" id="optDither"></select>
+            </div>
+            <div class="rangerow opt" data-for="quality" hidden>
+              <label for="optQuality">화질</label>
+              <input type="range" id="optQuality" min="10" max="100" step="5" value="75">
+              <output class="num" id="optQualityOut">75</output>
+            </div>
+            <div class="rangerow opt" data-for="crf" hidden>
+              <label for="optCrf">화질</label>
+              <input type="range" id="optCrf" min="16" max="40" step="1" value="23">
+              <output class="num" id="optCrfOut">23</output>
+            </div>
+            <div class="hint" id="advHint"></div>
+
+            <div class="st" style="margin-top:14px">목표 용량</div>
+            <div class="row">
+              <button class="db" id="btnFit">맞추기</button>
+              <div class="fieldrow" style="margin:0;flex:1">
+                <input class="inp" type="number" id="optTarget" min="0.2" max="200" step="0.5" value="5">
+                <span class="unit">MB</span>
+              </div>
+            </div>
+            <div class="hint">켜 두면 넘칠 때 알아서 낮춰 다시 만듭니다. 최대 3번 해 봅니다.</div>
+
+            <div class="row" style="margin-top:14px">
+              <button class="db" id="btnPresetSave"><i class="fa-solid fa-floppy-disk"></i>지금 값으로 저장</button>
+              <button class="db danger" id="btnPresetReset">기본값으로</button>
+            </div>
+
           </div>
-          <div class="hint">넘으면 프레임 → 해상도 → 색 수 순으로 낮춰 다시 굽습니다. 최대 3회 시도합니다.</div>
         </div>
       </div>
 
@@ -293,13 +311,13 @@
       <div class="tool" id="tool-out" hidden>
         <div class="pb-label">결과</div>
         <div id="resList"></div>
-        <div class="hint" id="resEmpty">구운 결과가 여기에 쌓입니다. 아래 줄에서 `이 구간 굽기`를 누르세요.</div>
+        <div class="hint" id="resEmpty">만든 것이 여기에 쌓입니다. 아래 줄에서 이 구간 만들기를 누르세요.</div>
         <button class="db danger" id="btnResClear" style="width:100%;justify-content:center;margin-top:8px" hidden>결과 비우기</button>
 
         <div class="sec2">
           <div class="st">파일 이름</div>
           <div class="namepv mono" id="namePv">—</div>
-          <div class="hint">원본 이름과 구간 시각으로 짓습니다. 여러 개를 구우면 ZIP으로 묶습니다.</div>
+          <div class="hint">원본 이름과 구간 시각으로 짓습니다. 여러 개를 만들면 ZIP으로 묶습니다.</div>
         </div>
       </div>
 
@@ -308,12 +326,14 @@
 </div>
 
 <div class="mk-bar">
-  <button class="db" id="btnPlay2" title="재생 · 멈춤 (Space)" disabled><i class="fa-solid fa-play"></i></button>
+  <button class="db" id="btnPlay" title="재생 · 멈춤 (Space)" disabled><i class="fa-solid fa-play"></i></button>
+  <button class="db" id="btnHome" title="구간 시작으로" disabled><i class="fa-solid fa-backward-step"></i></button>
+  <button class="db on" id="btnLoop" title="구간만 반복 재생" disabled><i class="fa-solid fa-repeat"></i></button>
   <span class="num" id="posLabel">0:00.0 / 0:00.0</span>
   <span class="bar-div"></span>
-  <button class="db go" id="btnRun" disabled><i class="fa-solid fa-fire"></i>이 구간 굽기</button>
-  <button class="db" id="btnAddClip" disabled><i class="fa-solid fa-plus"></i>구간 담기</button>
-  <button class="db" id="btnRunAll" disabled><i class="fa-solid fa-layer-group"></i>목록 전체 굽기</button>
+  <button class="db go" id="btnRun" disabled><i class="fa-solid fa-wand-magic-sparkles"></i>이 구간 만들기</button>
+  <button class="db" id="btnAddClip" disabled><i class="fa-solid fa-plus"></i>목록에 담기</button>
+  <button class="db" id="btnRunAll" disabled><i class="fa-solid fa-layer-group"></i>담은 것 모두 만들기</button>
   <button class="db warn" id="btnCancel" hidden><i class="fa-solid fa-stop"></i>그만두기</button>
   <span class="bar-sp"></span>
   <div class="prg" id="progressWrap" hidden>

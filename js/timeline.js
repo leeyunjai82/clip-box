@@ -215,6 +215,13 @@ window.ClipBox = window.ClipBox || {};
     $('tlSel').style.left = a + '%'; $('tlSel').style.width = (b - a) + '%';
     $('tlIn').style.left = a + '%';
     $('tlOut').style.left = b + '%';
+    // 구간이 너무 좁으면 글자가 손잡이를 덮으므로 숨깁니다
+    var len = $('tlLen');
+    if (len) {
+      var wide = (b - a) >= 9;
+      len.hidden = !wide;
+      if (wide) len.textContent = (TL.end - TL.start).toFixed(1) + '초';
+    }
     drawHead();
   }
   function drawHead() {

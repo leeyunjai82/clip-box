@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// app.js — 상태 · 영상 불러오기 · 클립 목록 · 작업 탭 · 굽기
+// app.js — 상태 · 영상 불러오기 · 담아 둔 구간 · 작업 탭 · 만들기
 // ═══════════════════════════════════════════════════════════
 // 1원칙 (design/README.md §7): 영상은 브라우저 밖으로 나가지 않습니다.
 // 이 파일에는 바깥을 부르는 코드가 한 줄도 없습니다
@@ -7,6 +7,11 @@
 //
 // 화면 규약: 알림은 toast / busy / .prg 셋뿐이고, 되돌릴 수 없는 동작만
 // confirm() 으로 한 번 묻습니다.
+//
+// 쉽게 쓰기 위한 규칙 둘
+//  · 자주 쓰는 것만 펼쳐 두고, 나머지는 `.db.fold` 로 접습니다.
+//  · 화면에 쓰는 말은 도구 용어가 아니라 하려는 일로 적습니다
+//    (굽기 → 만들기, 클립 목록 → 담아 둔 구간).
 
 window.ClipBox = window.ClipBox || {};
 
@@ -28,13 +33,17 @@ window.ClipBox = window.ClipBox || {};
   var MAX_TRIES = 3;
   var SPEEDS = P.SPEEDS;
 
+  // '작게 · 보통 · 크게' 가 가리키는 가로 크기
+  var SIZE_STEPS = [360, 480, 720];
+
   var S = {
     file:null, url:null, proxyURL:null, usingProxy:false,
     baseName:'clip', inName:'in.mp4', inputWritten:false,
     st:P.load(), cur:null,
     clips:[], activeClip:null, seq:0,
     busy:false, cancelled:false, results:[],
-    logo:null, logoURL:null, coreReady:false, step:'range'
+    logo:null, logoURL:null, coreReady:false, step:'range',
+    toldHowToPick:false
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -84,6 +93,7 @@ window.ClipBox = window.ClipBox || {};
     buildDither();
     buildPresetPick();
     wireTabs();
+    wireFolds();
     wireFile();
     wireRangeTool();
     wireTrimTool();
@@ -114,7 +124,7 @@ window.ClipBox = window.ClipBox || {};
 
   function loadCore() {
     var badge = $('#coreState');
-    var engine = document.getElementById('engine');
+    var engine = document.getElementById('engine');   // nav.js 가 헤더에 단 배지
     var MB = function (n) { return (n / 1024 / 1024).toFixed(1); };
     function setState(txt, ok) {
       badge.textContent = txt;
@@ -185,6 +195,20 @@ window.ClipBox = window.ClipBox || {};
     });
   }
 
+  // ── `자세히` 접기 ──
+  // 새 부품을 만들지 않습니다. 킷의 .db 버튼 하나로 아래 덩이를 여닫습니다.
+  function wireFolds() {
+    $$('.db.fold').forEach(function (b) {
+      var body = document.getElementById(b.dataset.fold);
+      if (!body) return;
+      b.addEventListener('click', function () {
+        var open = body.hidden;
+        body.hidden = !open;
+        b.classList.toggle('on', open);
+      });
+    });
+  }
+
   // ── .pickrow 공통 배선 ──
   function pick(id, fn) {
     var box = $('#' + id);
@@ -203,6 +227,17 @@ window.ClipBox = window.ClipBox || {};
     if (!box) return;
     Array.prototype.forEach.call(box.querySelectorAll('.db'), function (x) {
       x.classList.toggle('on', x.dataset.v === String(v));
+    });
+  }
+
+  /** 고른 상태가 남지 않는 버튼 줄 — 누르면 그때 한 번 실행만 합니다 */
+  function tap(id, fn) {
+    var box = $('#' + id);
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('.db');
+      if (!b || b.disabled) return;
+      fn(b.dataset.v);
     });
   }
 
@@ -271,12 +306,11 @@ window.ClipBox = window.ClipBox || {};
     S.clips = []; S.activeClip = null; S.seq = 0;
     renderClips();
 
+    var madeProxy = false;
     TLM.setVideo(S.url).catch(function () {
       // 브라우저가 못 푸는 코덱(아이폰 HEVC 등). ffmpeg 으로 미리보기용 영상을 만듭니다.
-      return buildProxy().then(function (m) {
-        toast(T('이 브라우저가 못 읽는 코덱이라 미리보기용 영상을 만들었습니다. 굽는 것은 언제나 원본입니다'));
-        return m;
-      });
+      madeProxy = true;
+      return buildProxy();
     }).then(function (meta) {
       $('#fileCard').hidden = false;
       $('#fileDur').textContent = fmtTime(meta.duration);
@@ -290,6 +324,13 @@ window.ClipBox = window.ClipBox || {};
       TLM.layout();
       onRangeChange();
       refreshEnabled();
+      // 영상을 넣은 직후, 다음에 뭘 해야 하는지 한 번만 알려 줍니다
+      if (madeProxy) {
+        toast(T('이 브라우저가 못 읽는 코덱이라 미리보기용 영상을 만들었습니다. 만드는 것은 언제나 원본입니다'));
+      } else if (!S.toldHowToPick) {
+        S.toldHowToPick = true;
+        toast(T('아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요'));
+      }
     }).catch(function () {
       toast(T('영상을 읽지 못했습니다. 다른 파일로 해 보세요'));
       TLM.clearVideo();
@@ -328,22 +369,26 @@ window.ClipBox = window.ClipBox || {};
   // 1. 구간 고르기
   // ═══════════════════════════════════════════════════════════
   function wireRangeTool() {
+    // 가장 흔한 길이를 한 번에 잡습니다. 세밀한 조정은 필름에서 합니다.
+    tap('lenPick', function (v) { setRangeLen(v); });
     $('#btnIn').addEventListener('click', function () { TLM.setIn(TL.vid.currentTime); });
     $('#btnOut').addEventListener('click', function () { TLM.setOut(TL.vid.currentTime); });
-    $('#btnPlay').addEventListener('click', TLM.togglePlay);
-    $('#btnHome').addEventListener('click', function () { TLM.seekTo(TL.start); });
-    $('#btnLoop').addEventListener('click', function () {
-      var on = !TL.loop;
-      TLM.setLoop(on);
-      $('#btnLoop').classList.toggle('on', on);
-    });
     $('#btnStill').addEventListener('click', saveStill);
   }
 
+  /** 시작점은 그대로 두고 길이만 맞춥니다. 끝이 영상 밖이면 시작을 앞으로 당깁니다. */
+  function setRangeLen(v) {
+    if (!TL.duration) return;
+    if (v === 'all') { TLM.setRange(0, TL.duration); return; }
+    var n = parseFloat(v);
+    if (!isFinite(n) || n <= 0) return;
+    if (n >= TL.duration) { TLM.setRange(0, TL.duration); return; }
+    var a = Math.max(0, Math.min(TL.start, TL.duration - n));
+    TLM.setRange(a, a + n);
+  }
+
   function onPlayState(playing) {
-    var ic = playing ? 'fa-pause' : 'fa-play';
-    $('#btnPlay').innerHTML = '<i class="fa-solid ' + ic + '"></i>' + T(playing ? '멈춤' : '재생');
-    $('#btnPlay2').innerHTML = '<i class="fa-solid ' + ic + '"></i>';
+    $('#btnPlay').innerHTML = '<i class="fa-solid ' + (playing ? 'fa-pause' : 'fa-play') + '"></i>';
   }
 
   function onTick(now) {
@@ -362,7 +407,7 @@ window.ClipBox = window.ClipBox || {};
     $('#rLen').textContent = (TL.end - TL.start).toFixed(1) + '초';
     $('#posLabel').textContent = fmtTime(TL.vid.currentTime) + ' / ' + fmtTime(TL.duration);
     var c = TLM.cropForEncode();
-    $('#cropInfo').textContent = c ? (c.w + ' × ' + c.h) : T('전체');
+    $('#cropInfo').textContent = c ? (c.w + ' × ' + c.h) : T('원본 그대로');
     // 지금 구간이 목록에 이미 있으면 그 줄을 짚어 줍니다
     var hit = matchingClipId();
     if (hit !== S.activeClip) { S.activeClip = hit; renderClips(); }
@@ -381,7 +426,7 @@ window.ClipBox = window.ClipBox || {};
       pingpong:job.loop === 'pingpong'
     });
     est.textContent = '≈ ' + fmtBytes(bytes) + ' · ' + d.w + '×' + d.h;
-    // 목표 용량을 켜 뒀는데 넘을 것 같으면 굽기 전에 알려 줍니다
+    // 목표 용량을 켜 뒀는데 넘을 것 같으면 만들기 전에 알려 줍니다
     est.classList.toggle('over', !!(S.st.fitToSize && bytes > S.st.targetMB * 1024 * 1024));
     $('#namePv').textContent = outName(job);
     refreshEnabled();
@@ -466,8 +511,10 @@ window.ClipBox = window.ClipBox || {};
 
   function wireSizeTool() {
     pick('presetPick', function (id) { pickPreset(id); });
+    pick('sizePick', function (v) { S.cur.width = parseInt(v, 10); applyUI(); });
     pick('formatPick', function (v) { S.cur.format = v; applyUI(); });
-    slider('optWidth', function (v) { S.cur.width = v; updateEstimate(); });
+    // 가로를 직접 끌면 '작게·보통·크게' 중 맞는 것만 켜집니다 (없으면 셋 다 꺼집니다)
+    slider('optWidth', function (v) { S.cur.width = v; pickSet('sizePick', v); updateEstimate(); });
     slider('optFps', function (v) { S.cur.fps = v; updateEstimate(); });
     slider('optColors', function (v) { S.cur.colors = v; updateEstimate(); });
     slider('optQuality', function (v) { S.cur.quality = v; updateEstimate(); });
@@ -479,7 +526,7 @@ window.ClipBox = window.ClipBox || {};
       S.st.presets.forEach(function (p) {
         if (p.id !== S.st.presetId) return;
         ['format', 'width', 'fps', 'colors', 'dither', 'quality', 'crf'].forEach(function (k) { p[k] = S.cur[k]; });
-        toast(TF('{name} 프리셋을 지금 값으로 저장했습니다', { name:P.presetName(p, lang) }));
+        toast(TF('{name}을(를) 지금 값으로 저장했습니다', { name:P.presetName(p, lang) }));
       });
       P.save(S.st);
       buildPresetPick();
@@ -490,7 +537,7 @@ window.ClipBox = window.ClipBox || {};
       P.save(S.st);
       buildPresetPick();
       pickPreset(S.st.presetId);
-      toast(T('프리셋을 기본값으로 되돌렸습니다'));
+      toast(T('기본값으로 되돌렸습니다'));
     });
 
     $('#btnFit').addEventListener('click', function () {
@@ -541,6 +588,7 @@ window.ClipBox = window.ClipBox || {};
     var f = P.FORMATS[c.format];
 
     pickSet('formatPick', c.format);
+    pickSet('sizePick', SIZE_STEPS.indexOf(c.width) >= 0 ? c.width : '');
     sliderSet('optWidth', c.width);
     sliderSet('optFps', c.fps);
     sliderSet('optColors', c.colors);
@@ -560,10 +608,15 @@ window.ClipBox = window.ClipBox || {};
         : k === 'quality' ? f.hasQuality
         : k === 'crf' ? f.hasCrf : true);
     });
+    // 형식은 코덱 이름이 아니라 쓰임새로 적습니다
     $('#formatHint').textContent = T(
-      c.format === 'gif' ? '팔레트를 뽑고 칠하는 2패스로 굽습니다. bayer가 가장 작게 나옵니다.'
-      : c.format === 'webp' ? 'libwebp 애니메이션입니다. 같은 화질이면 GIF보다 훨씬 작습니다.'
-      : 'libx264 · 소리 없음 고정 · faststart. CRF는 낮을수록 좋고 커집니다.');
+      c.format === 'gif' ? '어디에 붙여도 바로 움직입니다. 대신 용량이 가장 큽니다.'
+      : c.format === 'webp' ? 'GIF와 똑같이 쓰면서 용량은 훨씬 작습니다. 요즘 브라우저는 다 읽습니다.'
+      : '가장 작고 매끄럽습니다. 소리는 넣지 않습니다.');
+    $('#advHint').textContent = T(
+      c.format === 'gif' ? '색 수를 줄이면 용량이 줄고, 디더링을 끄면 화면 녹화는 훨씬 작아집니다.'
+      : c.format === 'webp' ? '숫자가 높을수록 선명하고 커집니다.'
+      : '숫자가 낮을수록 선명하고 커집니다.');
 
     $('#btnFit').classList.toggle('on', !!st.fitToSize);
     $('#optTarget').value = st.targetMB;
@@ -584,8 +637,9 @@ window.ClipBox = window.ClipBox || {};
     var ready = S.coreReady && hasVideo && !S.busy;
     var longEnough = TL.end - TL.start >= 0.1;
 
-    ['btnPlay', 'btnPlay2', 'btnHome', 'btnLoop', 'btnIn', 'btnOut', 'btnCrop', 'btnStill']
+    ['btnPlay', 'btnHome', 'btnLoop', 'btnIn', 'btnOut', 'btnCrop', 'btnStill']
       .forEach(function (id) { $('#' + id).disabled = !hasVideo || S.busy; });
+    $$('#lenPick .db').forEach(function (b) { b.disabled = !hasVideo || S.busy; });
     $('#btnAddClip').disabled = !(ready && longEnough);
     $('#btnRun').disabled = !(ready && longEnough);
     $('#btnRunAll').disabled = !(ready && S.clips.length > 0);
@@ -626,7 +680,7 @@ window.ClipBox = window.ClipBox || {};
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 클립 목록
+  // 담아 둔 구간
   // ═══════════════════════════════════════════════════════════
   function liveClip() {
     return {
@@ -676,6 +730,7 @@ window.ClipBox = window.ClipBox || {};
     var box = $('#queueList');
     box.innerHTML = '';
     $('#queueCount').textContent = S.clips.length;
+    $('#queueEmpty').hidden = S.clips.length > 0 || !S.file;
 
     S.clips.forEach(function (c, i) {
       var li = document.createElement('div');
@@ -734,10 +789,16 @@ window.ClipBox = window.ClipBox || {};
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 아래 작업 줄
+  // 아래 작업 줄 — 재생 조작과 주 동작을 한 줄에 모았습니다
   // ═══════════════════════════════════════════════════════════
   function wireBar() {
-    $('#btnPlay2').addEventListener('click', TLM.togglePlay);
+    $('#btnPlay').addEventListener('click', TLM.togglePlay);
+    $('#btnHome').addEventListener('click', function () { TLM.seekTo(TL.start); });
+    $('#btnLoop').addEventListener('click', function () {
+      var on = !TL.loop;
+      TLM.setLoop(on);
+      $('#btnLoop').classList.toggle('on', on);
+    });
     $('#btnAddClip').addEventListener('click', addClip);
     $('#btnRun').addEventListener('click', function () { runBatch([liveClip()]); });
     $('#btnRunAll').addEventListener('click', function () { runBatch(S.clips.slice()); });
@@ -761,7 +822,7 @@ window.ClipBox = window.ClipBox || {};
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 굽기
+  // 만들기
   // ═══════════════════════════════════════════════════════════
   function setBusyState(on) {
     S.busy = on;
@@ -826,7 +887,7 @@ window.ClipBox = window.ClipBox || {};
         renderResults();
         showStep('out');
         if (made.length === 1) toast(TF('다 됐습니다 — {name} ({size})', { name:made[0].name, size:fmtBytes(made[0].bytes) }));
-        else if (made.length > 1) toast(TF('{n}개를 구웠습니다. ZIP으로 받으세요', { n:made.length }));
+        else if (made.length > 1) toast(TF('{n}개를 만들었습니다. ZIP으로 받으세요', { n:made.length }));
       });
     }).catch(function (e) {
       // 그만두기로 워커가 죽어 던지는 것은 정상입니다 — 콘솔에 오류로 남기지 않습니다
@@ -836,7 +897,7 @@ window.ClipBox = window.ClipBox || {};
       if (F.isFatal(e)) { F.terminate(); S.inputWritten = false; }
       console.error(e);
     }).then(function () {
-      // 그만두기·오류로 워커가 죽었다면 되살려 둡니다 (다음 굽기가 바로 되게)
+      // 그만두기·오류로 워커가 죽었다면 되살려 둡니다 (다음 만들기가 바로 되게)
       if (!F.isLoaded()) {
         S.inputWritten = false;
         return F.reload().catch(function () { S.coreReady = false; });
@@ -847,7 +908,7 @@ window.ClipBox = window.ClipBox || {};
     });
   }
 
-  /** 클립 하나. 목표 용량이 켜져 있으면 최대 3번까지 낮춰 가며 다시 굽습니다. */
+  /** 구간 하나. 목표 용량이 켜져 있으면 최대 3번까지 낮춰 가며 다시 만듭니다. */
   function encodeOne(job, onProg) {
     var target = S.st.fitToSize ? Math.round(S.st.targetMB * 1024 * 1024) : 0;
     var tries = target ? MAX_TRIES : 1;
@@ -865,7 +926,7 @@ window.ClipBox = window.ClipBox || {};
       var base = (n - 1) / tries, w = 1 / tries;
 
       return runWithRetry(j, name, function (p, label) {
-        onProg(base + p * w, n > 1 ? T('다시 굽는 중입니다') : T(label));
+        onProg(base + p * w, n > 1 ? T('다시 만드는 중입니다') : T(label));
       }).then(function (data) {
         if (!best || data.length < best.data.length) {
           var snap = {};
@@ -883,7 +944,7 @@ window.ClipBox = window.ClipBox || {};
 
     return attempt().then(function () {
       if (!best) return null;
-      onProg(1, T('굽는 중입니다'));
+      onProg(1, T('만드는 중입니다'));
       var j = {}, k;
       for (k in job) if (Object.prototype.hasOwnProperty.call(job, k)) j[k] = job[k];
       for (k in best.cur) if (Object.prototype.hasOwnProperty.call(best.cur, k)) j[k] = best.cur[k];
@@ -1015,7 +1076,7 @@ window.ClipBox = window.ClipBox || {};
     cv.toBlob(function (b) {
       if (!b) return;
       download(b, S.baseName + '_' + TL.vid.currentTime.toFixed(1) + '.png');
-      toast(T('지금 프레임을 저장했습니다'));
+      toast(T('지금 화면을 사진으로 저장했습니다'));
     }, 'image/png');
   }
 
@@ -1025,5 +1086,6 @@ window.ClipBox = window.ClipBox || {};
 
   // 디버그용 (콘솔에서 상태를 보거나 자동 시험에서 씁니다)
   ClipBox.state = S;
-  ClipBox.debug = { showStep:showStep, addClip:addClip, toast:toast, setRange:TLM.setRange };
+  ClipBox.debug = { showStep:showStep, addClip:addClip, toast:toast,
+                    setRange:TLM.setRange, setRangeLen:setRangeLen };
 })();

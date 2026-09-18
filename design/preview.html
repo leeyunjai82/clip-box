@@ -127,7 +127,13 @@
           <label class="mini">여백<input class="inp" type="number" value="16"></label>
         </div>
 
-        <div class="st">.filebtn — 파일 고르기</div>
+        <div class="st">.db.fold — `자세히` 여닫개</div>
+        <button class="db fold" data-fold="pvFold"><i class="fa-solid fa-chevron-right"></i>가로 · 프레임 · 화질</button>
+        <div id="pvFold" hidden>
+          <div class="hint">자주 쓰지 않는 것을 여기에 접어 둡니다. 새 부품이 아니라 .db 에 클래스 하나를 더한 것입니다.</div>
+        </div>
+
+        <div class="st" style="margin-top:12px">.filebtn — 파일 고르기</div>
         <label class="db filebtn" for="pv3"><i class="fa-solid fa-image"></i>로고 PNG 고르기</label>
         <input type="file" id="pv3">
         <label class="db filebtn off" for="pv4" style="margin-top:6px"><i class="fa-solid fa-image"></i>잠긴 상태 (.off)</label>
@@ -184,9 +190,12 @@
   <button class="db"><i class="fa-solid fa-play"></i></button>
   <span class="num">0:01.4 / 0:08.0</span>
   <span class="bar-div"></span>
-  <button class="db go"><i class="fa-solid fa-bolt"></i>이 구간 굽기</button>
-  <button class="db"><i class="fa-solid fa-plus"></i>구간 담기</button>
-  <button class="db"><i class="fa-solid fa-layer-group"></i>목록 전체 굽기</button>
+  <button class="db"><i class="fa-solid fa-backward-step"></i></button>
+  <button class="db on"><i class="fa-solid fa-repeat"></i></button>
+  <span class="bar-div"></span>
+  <button class="db go"><i class="fa-solid fa-wand-magic-sparkles"></i>이 구간 만들기</button>
+  <button class="db"><i class="fa-solid fa-plus"></i>목록에 담기</button>
+  <button class="db"><i class="fa-solid fa-layer-group"></i>담은 것 모두 만들기</button>
   <button class="db warn"><i class="fa-solid fa-stop"></i>그만두기</button>
   <span class="bar-sp"></span>
   <div class="prg" style="width:230px">
@@ -220,7 +229,7 @@
         <div id="tlTrack">
           <div class="tl-dim" style="left:0;width:22%"></div>
           <div class="tl-dim" style="left:62%;right:0"></div>
-          <div id="tlSel" style="left:22%;width:40%"></div>
+          <div id="tlSel" style="left:22%;width:40%"><span class="tl-len num">3.2초</span></div>
           <div class="tl-hand" style="left:22%"><i></i></div>
           <div class="tl-hand" style="left:62%"><i></i></div>
           <div id="tlHead" style="left:34%"></div>
@@ -271,6 +280,12 @@
 (function () {
   var rows = [['0:00.6 → 0:03.2', '2.6초'], ['0:04.0 → 0:06.4', '2.4초'], ['0:06.8 → 0:08.0', '1.2초']];
   var box = document.getElementById('pvList');
+  document.querySelectorAll('.db.fold').forEach(function (b) {
+    var body = document.getElementById(b.dataset.fold);
+    b.addEventListener('click', function () {
+      var open = body.hidden; body.hidden = !open; b.classList.toggle('on', open);
+    });
+  });
   rows.forEach(function (r, i) {
     var d = document.createElement('div');
     d.className = 'qitem' + (i === 0 ? ' on' : '');
