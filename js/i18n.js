@@ -42,6 +42,7 @@ var GL_I18N = {
   // ── 왼쪽: 담아 둔 구간 ──
   '담아 둔 구간': 'Saved ranges',
   '영상을 여기에 놓거나 눌러서 고릅니다': 'Drop a video here, or click to choose',
+  '영상 고르기': 'Choose a video',
   'MP4 · MOV · WEBM을 받습니다. 다시 놓으면 그 영상으로 바뀝니다.':
     'MP4, MOV and WEBM are accepted. Drop another one and it replaces this video.',
   '길이': 'Length',
@@ -154,6 +155,8 @@ var GL_I18N = {
   '내려받기': 'Download',
   'ZIP으로 내려받기': 'Download ZIP',
   '이 결과 빼기': 'Remove this result',
+  '이 브라우저는 MP4를 못 풉니다. 파일은 정상이니 내려받아서 보세요.':
+    'This browser cannot decode MP4. The file itself is fine — download it and play it there.',
   '목표 용량을 맞추지 못했습니다. 가장 작게 나온 결과입니다.':
     'Could not hit the target size. This is the smallest result.',
 

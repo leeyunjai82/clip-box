@@ -270,6 +270,11 @@ window.ClipBox = window.ClipBox || {};
     zone.addEventListener('click', function (e) {
       if (e.target !== input) input.click();
     });
+    // 킷은 input[type=file] 을 숨기므로 키보드로는 닿지 않습니다.
+    // 영상을 넣는 자리는 이 도구의 입구라 키보드로도 열 수 있어야 합니다.
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); input.click(); }
+    });
     input.addEventListener('change', function () {
       if (input.files[0]) openFile(input.files[0]);
       input.value = '';
@@ -1059,6 +1064,15 @@ window.ClipBox = window.ClipBox || {};
         if (r.format === 'mp4') {
           var v = document.createElement('video');
           v.src = r.url; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+          // H.264 디코더가 없는 브라우저(일부 리눅스 빌드)에서는 빈 칸만 남습니다.
+          // 파일은 멀쩡하므로 그렇다고 알려 줍니다.
+          v.addEventListener('error', function () {
+            rv.innerHTML = '';
+            rv.classList.add('noplay');
+            var n = document.createElement('span');
+            n.textContent = T('이 브라우저는 MP4를 못 풉니다. 파일은 정상이니 내려받아서 보세요.');
+            rv.appendChild(n);
+          });
           rv.appendChild(v);
         } else {
           var im = document.createElement('img');

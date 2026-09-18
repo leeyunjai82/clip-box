@@ -120,6 +120,24 @@
 .db.fold i{width:10px;transition:transform .12s}
 .db.fold.on i{transform:rotate(90deg)}
 
+/* ── 키보드로 옮겨 다닐 때 지금 어디인지 ───────────────── */
+/* 킷에는 .inp:focus 만 있어 버튼·탭은 Tab 으로 옮겨도 표시가 없었다.
+   자매 서비스에도 똑같이 필요하므로 킷으로 옮길 후보다.
+   :focus-visible 이라 마우스로 누를 때는 나오지 않는다. */
+.db:focus-visible,
+.tabbar .tab:focus-visible,
+.filebtn:focus-visible,
+.dropzone:focus-visible,
+.qitem:focus-visible,
+#langToggle:focus-visible,
+.hbtn:focus-visible,
+.res .rb .db:focus-visible{outline:2px solid var(--acc);outline-offset:2px;
+  transition:none}                 /* 킷의 transition:all 을 타면 테두리가 뒤늦게 떠오른다 */
+
+/* ── 결과: 이 브라우저가 못 푸는 형식 ──────────────────── */
+.res .rv.noplay{min-height:84px;padding:14px 12px;text-align:center}
+.res .rv.noplay span{font-size:11px;color:var(--ink3);font-weight:600;line-height:1.6}
+
 /* ── .saved 한 줄 안의 것들 ────────────────────────────── */
 /* .saved 는 킷 부품이다. 그 줄에 들어가는 버튼은 줄 높이(6px 9px)를 넘지
    않게 한 단계 작게 쓴다. 자매 서비스도 같은 일이 생기면 킷으로 옮긴다. */
