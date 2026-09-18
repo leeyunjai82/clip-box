@@ -25,6 +25,12 @@ window.ClipBox = window.ClipBox || {};
   };
 
   // ── 표시용 ──
+  /** 초 단위 표기. 영어에서는 s 로 나갑니다. */
+  function fmtSec(sec) {
+    var n = sec.toFixed(1);
+    return ClipBox.i18n ? ClipBox.i18n.tf('{n}\ucd08', { n:n }) : n + '\ucd08';
+  }
+
   function fmtTime(t) {
     if (!isFinite(t) || t < 0) t = 0;
     var m = Math.floor(t / 60), s = t - m * 60;
@@ -220,7 +226,7 @@ window.ClipBox = window.ClipBox || {};
     if (len) {
       var wide = (b - a) >= 9;
       len.hidden = !wide;
-      if (wide) len.textContent = (TL.end - TL.start).toFixed(1) + '초';
+      if (wide) len.textContent = fmtSec(TL.end - TL.start);
     }
     drawHead();
   }
@@ -375,7 +381,8 @@ window.ClipBox = window.ClipBox || {};
     layout();
     emit();
   }
-  function clearCrop() { TL.crop = null; defaultCrop(); drawCropBox(); emit(); }
+  /** 칸을 기본 자리(가운데)로 되돌립니다. 칸을 아예 없애는 것은 setCropEnabled(false) 입니다. */
+  function centerCrop() { TL.crop = null; defaultCrop(); drawCropBox(); emit(); }
 
   function setRatio(r) {
     TL.ratio = r;
@@ -545,9 +552,9 @@ window.ClipBox = window.ClipBox || {};
     TL: TL, init: init, setVideo: setVideo, clearVideo: clearVideo, layout: layout,
     togglePlay: togglePlay, pause: pause, setLoop: setLoop, seekTo: seekTo,
     setIn: setIn, setOut: setOut, setRange: setRange,
-    setCropEnabled: setCropEnabled, clearCrop: clearCrop, setRatio: setRatio,
+    setCropEnabled: setCropEnabled, centerCrop: centerCrop, setRatio: setRatio,
     cropForEncode: cropForEncode, applyCrop: applyCrop,
     grabThumb: grabThumb, grabStill: grabStill,
-    fmtTime: fmtTime, fmtBytes: fmtBytes, redrawThumbsSoon: redrawThumbsSoon
+    fmtTime: fmtTime, fmtSec: fmtSec, fmtBytes: fmtBytes, redrawThumbsSoon: redrawThumbsSoon
   };
 })();

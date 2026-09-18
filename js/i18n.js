@@ -56,6 +56,7 @@ var GL_I18N = {
 
   // ── 가운데 ──
   '미리보기': 'Preview',
+  '왼쪽에 영상을 먼저 넣어 주세요.': 'Add a video on the left first.',
   '영상은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.':
     'Your video is processed in this browser only and is never sent anywhere.',
   '왼쪽에 영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.':
@@ -75,6 +76,8 @@ var GL_I18N = {
   '아래 필름에서 파란 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.':
     'You can also drag the blue handles on the filmstrip. Dragging inside the range moves it without changing its length.',
   '재생 · 멈춤 (Space)': 'Play / pause (Space)',
+  'Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초 · 재생 중 I·O 로 시작·끝 잡기':
+    'Space play/pause · ←→ one frame · Shift+←→ 1s · press I and O while playing to set in/out',
   '구간 시작으로': 'Back to range start',
   '구간만 반복 재생': 'Loop the range only',
   '사진 한 장': 'A single photo',
@@ -83,13 +86,13 @@ var GL_I18N = {
   // ── 2. 다듬기 ──
   '잘라내기': 'Crop',
   '칸 그리기': 'Draw a box',
-  '칸 지우기': 'Clear the box',
-  '지우기': 'Clear',
+  '가운데로': 'Center it',
   '자유': 'Free',
   '지금': 'Now',
   '원본 그대로': 'Whole frame',
-  '영상 위를 끌어 칸을 그립니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.':
-    'Drag on the video to draw a box. Handy for pulling a square out of a portrait clip.',
+  '원본보다 크게 만들지는 않습니다.': 'Never upscales past the source.',
+  '켜면 영상 위를 끌어 칸을 그립니다. 끄면 원본 그대로 나갑니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.':
+    'Turn it on and drag on the video to draw a box; off means the whole frame. Handy for pulling a square out of a portrait clip.',
   '배속 · 방향': 'Speed and direction',
   '배속': 'Speed',
   '정방향': 'Forward',
@@ -173,6 +176,8 @@ var GL_I18N = {
   '아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요':
     'Drag the blue handles on the filmstrip below to pick the part you want',
   '영상 파일이 아닙니다': 'That is not a video file',
+  '그림 파일만 됩니다 (PNG · WEBP · JPG)': 'Images only (PNG, WEBP, JPG)',
+  '만드는 중입니다. 끝나거나 그만둔 뒤에 바꾸세요': 'Still making it. Change the video after it finishes or you stop it',
   '영상을 읽지 못했습니다. 다른 파일로 해 보세요': 'Could not read the video. Try another file',
   '먼저 영상을 넣어 주세요': 'Add a video first',
   '코어를 아직 못 불러왔습니다': 'The core is not loaded yet',
@@ -199,6 +204,10 @@ var GL_I18N = {
   '목록을 모두 비울까요?': 'Clear the whole list?',
   '담아 둔 구간 {n}개도 같이 없어집니다. 영상을 뺄까요?':
     'The {n} saved range(s) go too. Remove the video?',
+  '담아 둔 구간 {n}개도 같이 없어집니다. 다른 영상으로 바꿀까요?':
+    'The {n} saved range(s) go too. Switch to the other video?',
+  '{name} 을(를) 뺄까요?': 'Remove {name}?',
+  '{n}초': '{n}s',
   '{n} / {total} MB': '{n} / {total} MB'
 };
 

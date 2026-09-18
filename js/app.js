@@ -27,7 +27,7 @@ window.ClipBox = window.ClipBox || {};
 
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
-  var fmtTime = TLM.fmtTime, fmtBytes = TLM.fmtBytes;
+  var fmtTime = TLM.fmtTime, fmtSec = TLM.fmtSec, fmtBytes = TLM.fmtBytes;
 
   var BIG_FILE = 300 * 1024 * 1024;
   var MAX_TRIES = 3;
@@ -43,7 +43,7 @@ window.ClipBox = window.ClipBox || {};
     clips:[], activeClip:null, seq:0,
     busy:false, cancelled:false, results:[],
     logo:null, logoURL:null, coreReady:false, step:'range',
-    toldHowToPick:false
+    toldHowToPick:false, leaving:false
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -102,11 +102,15 @@ window.ClipBox = window.ClipBox || {};
     wireBar();
 
     applyUI();
+    onRangeChange();      // HTML 에 박힌 초기값 대신 한 번 그려 둡니다 (영어 단위까지)
     refreshEnabled();
     window.addEventListener('resize', TLM.layout);
     window.addEventListener('beforeunload', function (e) {
       if (S.busy) { e.preventDefault(); e.returnValue = ''; }
     });
+    // 페이지를 떠나는 중에는 하던 요청이 끊깁니다. 이미 떠나는 마당에
+    // "새로고침해 주세요" 라고 알릴 이유가 없습니다.
+    window.addEventListener('pagehide', function () { S.leaving = true; });
 
     loadCore();
   }
@@ -148,6 +152,7 @@ window.ClipBox = window.ClipBox || {};
       setState(T('준비 완료'), true);
       refreshEnabled();
     }).catch(function (e) {
+      if (S.leaving) return;               // 새로고침·이동으로 끊긴 것은 알릴 일이 아닙니다
       busy(false);
       setState(T('코어를 불러오지 못했습니다'), false);
       toast(T('코어를 불러오지 못했습니다. 새로고침해 주세요'));
@@ -290,11 +295,14 @@ window.ClipBox = window.ClipBox || {};
   }
 
   function openFile(file) {
-    if (S.busy) return;
+    if (S.busy) { toast(T('만드는 중입니다. 끝나거나 그만둔 뒤에 바꾸세요')); return; }
     if (!/^video\//.test(file.type) && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name)) {
       toast(T('영상 파일이 아닙니다')); return;
     }
     if (!S.coreReady) { toast(T('코어를 아직 못 불러왔습니다')); return; }
+    // 영상을 바꾸면 담아 둔 구간은 그 영상 것이므로 쓸 수 없게 됩니다 — 빼기와 같게 한 번 묻습니다
+    if (S.clips.length &&
+        !confirm(TF('담아 둔 구간 {n}개도 같이 없어집니다. 다른 영상으로 바꿀까요?', { n:S.clips.length }))) return;
 
     if (S.url) URL.revokeObjectURL(S.url);
     if (S.proxyURL) { URL.revokeObjectURL(S.proxyURL); S.proxyURL = null; }
@@ -427,13 +435,13 @@ window.ClipBox = window.ClipBox || {};
   function onRangeChange() {
     if (!TL.duration) {
       $('#rIn').textContent = $('#rOut').textContent = '0:00.0';
-      $('#rLen').textContent = '0.0초';
+      $('#rLen').textContent = fmtSec(0);
       $('#rEst').textContent = '—';
       return;
     }
     $('#rIn').textContent = fmtTime(TL.start);
     $('#rOut').textContent = fmtTime(TL.end);
-    $('#rLen').textContent = (TL.end - TL.start).toFixed(1) + '초';
+    $('#rLen').textContent = fmtSec(TL.end - TL.start);
     $('#posLabel').textContent = fmtTime(TL.vid.currentTime) + ' / ' + fmtTime(TL.duration);
     var c = TLM.cropForEncode();
     $('#cropInfo').textContent = c ? (c.w + ' × ' + c.h) : T('원본 그대로');
@@ -469,7 +477,7 @@ window.ClipBox = window.ClipBox || {};
       TLM.setCropEnabled(!TL.cropOn);
       paintCropButtons();
     });
-    $('#btnCropClear').addEventListener('click', function () { TLM.clearCrop(); });
+    $('#btnCropCenter').addEventListener('click', function () { TLM.centerCrop(); });
     pick('ratioPick', function (v) { TLM.setRatio(v); });
 
     slider('optSpeed', function (i) { S.cur.speedIdx = i; updateEstimate(); },
@@ -486,14 +494,18 @@ window.ClipBox = window.ClipBox || {};
 
     $('#logoFile').addEventListener('change', function (e) {
       var f = e.target.files[0];
+      e.target.value = '';
       if (!f) return;
+      // accept= 는 파일 창의 고르기 필터일 뿐이라 영상도 들어옵니다
+      if (!/^image\//.test(f.type) && !/\.(png|webp|jpe?g|gif|bmp)$/i.test(f.name)) {
+        toast(T('그림 파일만 됩니다 (PNG · WEBP · JPG)')); return;
+      }
       if (S.logoURL) URL.revokeObjectURL(S.logoURL);
       S.logo = f;
       S.logoURL = URL.createObjectURL(f);
       $('#logoPrev').src = S.logoURL;
       $('#logoName').textContent = f.name;
       $('#logoRow').hidden = false;
-      e.target.value = '';
     });
     $('#btnLogoClear').addEventListener('click', function () {
       if (S.logoURL) URL.revokeObjectURL(S.logoURL);
@@ -506,9 +518,11 @@ window.ClipBox = window.ClipBox || {};
 
   function paintCropButtons() {
     var on = TL.cropOn;
+    // 라벨은 바꾸지 않습니다. '칸 지우기' 라고 적어 두니 옆의 지우기 버튼과
+    // 같은 일을 하는 것처럼 읽혔습니다. 켜졌다는 것은 .on 과 딸린 줄로 알립니다.
     $('#btnCrop').classList.toggle('on', on);
-    $('#btnCrop').innerHTML = '<i class="fa-solid fa-crop-simple"></i>' + T(on ? '칸 지우기' : '칸 그리기');
     $('#ratioPick').hidden = !on;
+    $('#cropTools').hidden = !on;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -642,7 +656,7 @@ window.ClipBox = window.ClipBox || {};
       c.format === 'gif' ? '어디에 붙여도 바로 움직입니다. 대신 용량이 가장 큽니다.'
       : c.format === 'webp' ? 'GIF와 똑같이 쓰면서 용량은 훨씬 작습니다. 요즘 브라우저는 다 읽습니다.'
       : '가장 작고 매끄럽습니다. 소리는 넣지 않습니다.');
-    $('#advHint').textContent = T(
+    $('#advHint').textContent = T('원본보다 크게 만들지는 않습니다.') + ' ' + T(
       c.format === 'gif' ? '색 수를 줄이면 용량이 줄고, 디더링을 끄면 화면 녹화는 훨씬 작아집니다.'
       : c.format === 'webp' ? '숫자가 높을수록 선명하고 커집니다.'
       : '숫자가 낮을수록 선명하고 커집니다.');
@@ -666,16 +680,25 @@ window.ClipBox = window.ClipBox || {};
     var ready = S.coreReady && hasVideo && !S.busy;
     var longEnough = TL.end - TL.start >= 0.1;
 
-    ['btnPlay', 'btnHome', 'btnLoop', 'btnIn', 'btnOut', 'btnCrop', 'btnStill']
-      .forEach(function (id) { $('#' + id).disabled = !hasVideo || S.busy; });
-    $$('#lenPick .db').forEach(function (b) { b.disabled = !hasVideo || S.busy; });
+    // 영상이 없으면 오른쪽 패널에서 할 수 있는 일이 없습니다.
+    // 1번 탭만 잠그고 2·3번은 열어 두면 왜 여기만 되는지 알 수 없습니다.
+    $$('#panTool button, #panTool input, #panTool select')
+      .forEach(function (el) { el.disabled = !hasVideo || S.busy; });
+    $$('.needvideo').forEach(function (el) { el.hidden = hasVideo; });
+    // 패널을 통째로 풀었으므로, 조건이 따로 있는 것은 여기서 다시 잠급니다
+    $('#optTarget').disabled = !hasVideo || S.busy || !S.st.fitToSize;
+    ['btnPlay', 'btnHome', 'btnLoop'].forEach(function (id) { $('#' + id).disabled = !hasVideo || S.busy; });
     $('#btnAddClip').disabled = !(ready && longEnough);
     $('#btnRun').disabled = !(ready && longEnough);
     $('#btnRunAll').disabled = !(ready && S.clips.length > 0);
     $('#btnRemoveSel').disabled = !S.clips.length || S.busy;
     $('#btnClearQueue').disabled = !S.clips.length || S.busy;
-    $('#btnCropClear').disabled = !hasVideo || S.busy;
     $('#btnFileClear').disabled = !S.file || S.busy;
+    // 영상을 빼도 이미 만들어 둔 결과는 내려받을 수 있어야 합니다
+    if (!S.busy) {
+      $('#btnResClear').disabled = S.results.length === 0;
+      $$('#resList button').forEach(function (el) { el.disabled = false; });
+    }
     markDone();
   }
 
@@ -783,7 +806,7 @@ window.ClipBox = window.ClipBox || {};
       nm.textContent = fmtTime(c.start) + ' → ' + fmtTime(c.end);
       var mt = document.createElement('div');
       mt.className = 'mt';
-      var bits = [(c.end - c.start).toFixed(1) + '초'];
+      var bits = [fmtSec(c.end - c.start)];
       if (c.crop) bits.push(c.crop.w + '×' + c.crop.h);
       if (c.speed !== 1) bits.push(c.speed + '×');
       if (c.loop === 'reverse') bits.push(T('역재생'));
@@ -920,6 +943,7 @@ window.ClipBox = window.ClipBox || {};
         else if (made.length > 1) toast(TF('{n}개를 만들었습니다. ZIP으로 받으세요', { n:made.length }));
       });
     }).catch(function (e) {
+      if (S.leaving) return;
       // 그만두기로 워커가 죽어 던지는 것은 정상입니다 — 콘솔에 오류로 남기지 않습니다
       if (S.cancelled || /terminated|그만/i.test(String(e))) { toast(T('그만뒀습니다')); return; }
       if (F.isFatal(e)) toast(T('메모리가 모자랍니다. 구간을 짧게 하거나 가로 크기를 줄여 보세요'));
@@ -1055,7 +1079,7 @@ window.ClipBox = window.ClipBox || {};
       mt.className = 'rm';
       mt.textContent = r.isZip
         ? fmtBytes(r.bytes) + ' · ' + r.count
-        : fmtBytes(r.bytes) + ' · ' + r.w + '×' + r.h + ' · ' + r.fps + 'fps · ' + r.seconds.toFixed(1) + '초';
+        : fmtBytes(r.bytes) + ' · ' + r.w + '×' + r.h + ' · ' + r.fps + 'fps · ' + fmtSec(r.seconds);
       rf.appendChild(mt);
 
       if (r.missed) {
@@ -1078,6 +1102,7 @@ window.ClipBox = window.ClipBox || {};
       rm.title = T('이 결과 빼기');
       rm.innerHTML = '<i class="fa-solid fa-xmark"></i>';
       rm.addEventListener('click', function () {
+        if (!confirm(TF('{name} 을(를) 뺄까요?', { name:r.name }))) return;
         if (r.url) URL.revokeObjectURL(r.url);
         S.results = S.results.filter(function (v) { return v !== r; });
         renderResults();

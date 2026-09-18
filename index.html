@@ -131,6 +131,7 @@
             <button class="db" id="btnOut" disabled><i class="fa-solid fa-right-from-bracket"></i>여기를 끝으로</button>
           </div>
           <div class="hint">아래 필름에서 파란 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.</div>
+          <div class="hint">Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초 · 재생 중 I·O 로 시작·끝 잡기</div>
         </div>
 
         <div class="sec2">
@@ -141,12 +142,13 @@
 
       <!-- 2. 다듬기 -->
       <div class="tool" id="tool-trim" hidden>
+        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
         <div class="pb-label">잘라내기</div>
-        <div class="row">
-          <button class="db" id="btnCrop" disabled><i class="fa-solid fa-crop-simple"></i>칸 그리기</button>
-          <button class="db danger" id="btnCropClear"><i class="fa-solid fa-xmark"></i>지우기</button>
+        <button class="db" id="btnCrop" style="width:100%;justify-content:center" disabled><i class="fa-solid fa-crop-simple"></i>칸 그리기</button>
+        <div class="row" id="cropTools" style="margin-top:6px" hidden>
+          <button class="db" id="btnCropCenter" style="flex:1;justify-content:center"><i class="fa-solid fa-crosshairs"></i>가운데로</button>
         </div>
-        <div class="pickrow" id="ratioPick" style="margin-top:8px" hidden>
+        <div class="pickrow" id="ratioPick" style="margin-top:6px" hidden>
           <button class="db on" data-v="free">자유</button>
           <button class="db" data-v="1">1:1</button>
           <button class="db" data-v="1.7778">16:9</button>
@@ -156,7 +158,7 @@
         <div class="summary" style="margin-top:6px">
           <div class="srow"><span class="sk">지금</span><span class="sv num" id="cropInfo">원본 그대로</span></div>
         </div>
-        <div class="hint">영상 위를 끌어 칸을 그립니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.</div>
+        <div class="hint">켜면 영상 위를 끌어 칸을 그립니다. 끄면 원본 그대로 나갑니다. 세로 영상에서 정사각형을 뽑을 때 씁니다.</div>
 
         <div class="sec2">
           <div class="st">배속 · 방향</div>
@@ -237,6 +239,7 @@
 
       <!-- 3. 크기·용량 -->
       <div class="tool" id="tool-size" hidden>
+        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
         <div class="pb-label">어디에 쓸 영상인가요</div>
         <div class="pickrow" id="presetPick"></div>
         <div class="namepv mono" id="presetPv">480px · 10fps · GIF</div>
@@ -314,6 +317,7 @@
 
       <!-- 4. 내보내기 -->
       <div class="tool" id="tool-out" hidden>
+        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
         <div class="pb-label">결과</div>
         <div id="resList"></div>
         <div class="hint" id="resEmpty">만든 것이 여기에 쌓입니다. 아래 줄에서 이 구간 만들기를 누르세요.</div>
