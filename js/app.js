@@ -305,6 +305,7 @@ window.ClipBox = window.ClipBox || {};
       toast(T('영상 파일이 아닙니다')); return;
     }
     if (!S.coreReady) { toast(T('코어를 아직 못 불러왔습니다')); return; }
+    if (!file.size) { toast(T('빈 파일입니다')); return; }
     // 영상을 바꾸면 담아 둔 구간은 그 영상 것이므로 쓸 수 없게 됩니다 — 빼기와 같게 한 번 묻습니다
     if (S.clips.length &&
         !confirm(TF('담아 둔 구간 {n}개도 같이 없어집니다. 다른 영상으로 바꿀까요?', { n:S.clips.length }))) return;
@@ -348,8 +349,9 @@ window.ClipBox = window.ClipBox || {};
         S.toldHowToPick = true;
         toast(T('아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요'));
       }
-    }).catch(function () {
-      toast(T('영상을 읽지 못했습니다. 다른 파일로 해 보세요'));
+    }).catch(function (e) {
+      toast(T(/NOVIDEO/.test(String(e && e.message)) ? '이 파일에는 영상이 없습니다 (소리만 들어 있습니다)'
+                                                     : '영상을 읽지 못했습니다. 다른 파일로 해 보세요'));
       S.file = null;
       resetStage();
     });
@@ -493,7 +495,7 @@ window.ClipBox = window.ClipBox || {};
       function (v) { return v > 0 ? v.toFixed(1) + 's' : '0'; }, true);
 
     $('#optText').addEventListener('input', updateEstimate);
-    pick('textPosPick', function (v) { S.st.textPos = v; P.save(S.st); });
+    pick('textPosPick', function (v) { S.st.textPos = v; P.save(S.st); avoidOverlap('logo'); });
     slider('optTextSize', function (v) { S.st.textSize = v; P.save(S.st); });
     slider('optTextPad', function (v) { S.st.textPad = v; P.save(S.st); });
 
@@ -517,8 +519,18 @@ window.ClipBox = window.ClipBox || {};
       S.logo = null; S.logoURL = null;
       $('#logoRow').hidden = true;
     });
-    pick('logoPosPick', function (v) { S.st.logoPos = v; P.save(S.st); });
+    pick('logoPosPick', function (v) { S.st.logoPos = v; P.save(S.st); avoidOverlap('text'); });
     slider('optLogoSize', function (v) { S.st.logoScale = v; P.save(S.st); });
+  }
+
+  /** 글자와 로고를 같은 모서리에 두면 로고가 글자를 덮습니다. 나중에 고른 쪽을 남기고 다른 쪽을 옆으로 밉니다. */
+  function avoidOverlap(move) {
+    if (S.st.textPos !== S.st.logoPos) return;
+    var flip = { 'top-left':'top-right', 'top-right':'top-left', 'bottom-left':'bottom-right', 'bottom-right':'bottom-left' };
+    if (move === 'text') { S.st.textPos = flip[S.st.textPos]; pickSet('textPosPick', S.st.textPos); }
+    else                 { S.st.logoPos = flip[S.st.logoPos]; pickSet('logoPosPick', S.st.logoPos); }
+    P.save(S.st);
+    toast(T(move === 'text' ? '로고와 겹치지 않게 글자를 옆 모서리로 옮겼습니다' : '글자와 겹치지 않게 로고를 옆 모서리로 옮겼습니다'));
   }
 
   function paintCropButtons() {
@@ -601,7 +613,11 @@ window.ClipBox = window.ClipBox || {};
 
   function pickPreset(id) {
     S.st.presetId = id;
+    // 프리셋은 크기·형식·화질만 바꿉니다. 다듬기 탭에서 정한 배속·방향은 그대로 둡니다.
+    var keepSpeed = S.cur ? S.cur.speedIdx : null, keepLoop = S.cur ? S.cur.loop : null;
     S.cur = pickCur(id);
+    if (keepSpeed != null) S.cur.speedIdx = keepSpeed;
+    if (keepLoop) S.cur.loop = keepLoop;
     var p = null;
     S.st.presets.forEach(function (x) { if (x.id === id) p = x; });
     // 목표 용량이 박힌 프리셋(메신저)은 '맞추기' 를 같이 켭니다

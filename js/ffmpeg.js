@@ -177,9 +177,10 @@ window.ClipBox = window.ClipBox || {};
       return ff.exec(['-hide_banner', '-i', inName, '-frames:v', '1', '-f', 'null', '-'])
         .catch(function () {});
     }).then(function () {
-      var w = 0, h = 0, rot = 0, dur = 0;
+      var w = 0, h = 0, rot = 0, dur = 0, audio = false;
       logLines.forEach(function (l) {
         var m;
+        if (/Stream #\d+:\d+.*Audio:/.test(l)) audio = true;
         if (!w && /Stream #\d+:\d+.*Video:/.test(l)) {
           m = l.match(/,\s(\d{2,5})x(\d{2,5})[\s,\[]/);
           if (m) { w = +m[1]; h = +m[2]; }
@@ -194,7 +195,7 @@ window.ClipBox = window.ClipBox || {};
         }
       });
       if (rot === 90 || rot === 270) { var t = w; w = h; h = t; }
-      return { w:w, h:h, rotation:rot, duration:dur };
+      return { w:w, h:h, rotation:rot, duration:dur, hasAudio:audio };
     });
   }
 
@@ -207,6 +208,8 @@ window.ClipBox = window.ClipBox || {};
     var info;
     return probeInput(inName).then(function (i) {
       info = i;
+      // 영상 트랙이 없다: 소리만 든 파일이면 그렇다고, 아예 못 읽는 파일이면 일반 오류로
+      if (!info.w || !info.h) throw new Error(info.hasAudio ? 'NOVIDEO' : '영상을 읽지 못했습니다');
       var H = Math.max(2, 2 * Math.round(Math.min(maxH || 540, info.h || maxH || 540) / 2));
       var W = info.h ? Math.max(2, 2 * Math.round((info.w * (H / info.h)) / 2)) : 0;
       var dur = info.duration || 0;

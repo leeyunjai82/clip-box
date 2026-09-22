@@ -179,6 +179,10 @@ var GL_I18N = {
   '아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요':
     'Drag the blue handles on the filmstrip below to pick the part you want',
   '영상 파일이 아닙니다': 'That is not a video file',
+  '빈 파일입니다': 'That file is empty',
+  '이 파일에는 영상이 없습니다 (소리만 들어 있습니다)': 'There is no video in that file (audio only)',
+  '로고와 겹치지 않게 글자를 옆 모서리로 옮겼습니다': 'Moved the text to the next corner so the logo does not cover it',
+  '글자와 겹치지 않게 로고를 옆 모서리로 옮겼습니다': 'Moved the logo to the next corner so it does not cover the text',
   '그림 파일만 됩니다 (PNG · WEBP · JPG)': 'Images only (PNG, WEBP, JPG)',
   '만드는 중입니다. 끝나거나 그만둔 뒤에 바꾸세요': 'Still making it. Change the video after it finishes or you stop it',
   '영상을 읽지 못했습니다. 다른 파일로 해 보세요': 'Could not read the video. Try another file',
