@@ -649,6 +649,9 @@ window.ClipBox = window.ClipBox || {};
   // ═══════════════════════════════════════════════════════════
   function applyUI() {
     var c = S.cur, st = S.st;
+    // 저장본은 presets.js 에서 정리하지만, 그래도 모르는 형식이면 화면 그리기를
+    // 멈추지 않고 기본값으로 이어 갑니다
+    if (!P.FORMATS[c.format]) c.format = P.BUILTIN[0].format;
     var f = P.FORMATS[c.format];
 
     pickSet('formatPick', c.format);

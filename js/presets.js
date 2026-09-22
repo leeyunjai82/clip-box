@@ -3,6 +3,9 @@
 // ═══════════════════════════════════════════════════════════
 // design/README.md §6: classic script + 전역 네임스페이스(window.ClipBox).
 // 저장 키는 `clipbox.settings` 하나. 영상 데이터는 어떤 형태로도 저장하지 않는다.
+//
+// 저장본은 믿지 않는다. 옛 버전이 남겼거나 손으로 고친 값이 들어와도
+// 화면이 깨지지 않게, 읽는 이 자리에서 한 번에 정리한다(clean 아래).
 
 window.ClipBox = window.ClipBox || {};
 
@@ -25,6 +28,18 @@ window.ClipBox = window.ClipBox || {};
 
   var SPEEDS = [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4];
 
+  var CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+  var ROTATES = ['auto', '90', '180', '270'];
+
+  // 값의 허용 범위 — index.html 의 슬라이더와 같은 값을 씁니다.
+  var RANGE = {
+    width:  [160, 1280], fps:      [4, 30],   colors:   [8, 256],
+    quality:[10, 100],   crf:      [16, 40],  maxBytes: [0, 200 * 1024 * 1024],
+    targetMB:[0.2, 200], fade:     [0, 1.5],
+    textSize:[10, 72],   textPad:  [0, 60],
+    logoScale:[5, 50],   logoPad:  [0, 60]
+  };
+
   // ── 기본 프리셋 ──
   // 이름은 한/영 두 벌. 사용자가 값을 고쳐 저장해도 이름은 그대로 둔다.
   var BUILTIN = [
@@ -46,17 +61,63 @@ window.ClipBox = window.ClipBox || {};
     logoPos:'bottom-right', logoScale:18, logoPad:16
   };
 
+  // ═══════════════════════════════════════════════════════════
+  // 저장본 정리 — 어떤 값이 들어와도 쓸 수 있는 값으로 만든다
+  // ═══════════════════════════════════════════════════════════
+  /** 숫자로 못 읽거나 범위를 벗어나면 기본값·경계값으로 */
+  function num(v, key, dflt) {
+    var n = typeof v === 'number' ? v : parseFloat(v);
+    if (!isFinite(n)) return dflt;
+    var r = RANGE[key];
+    return r ? Math.min(r[1], Math.max(r[0], n)) : n;
+  }
+  /** 목록에 없는 값이면 기본값으로 */
+  function oneOf(v, list, dflt) { return list.indexOf(v) >= 0 ? v : dflt; }
+
+  function cleanPreset(p, base) {
+    return {
+      id:base.id, name:base.name,
+      format: oneOf(p.format, Object.keys(FORMATS), base.format),
+      width:  Math.round(num(p.width,  'width',  base.width)),
+      fps:    Math.round(num(p.fps,    'fps',    base.fps)),
+      colors: Math.round(num(p.colors, 'colors', base.colors)),
+      dither: oneOf(p.dither, DITHERS, base.dither),
+      quality:Math.round(num(p.quality,'quality',base.quality)),
+      crf:    Math.round(num(p.crf,    'crf',    base.crf)),
+      maxBytes: Math.round(num(p.maxBytes, 'maxBytes', base.maxBytes))
+    };
+  }
+
+  function clean(s) {
+    var ids = BUILTIN.map(function (p) { return p.id; });
+    return {
+      presetId: oneOf(s.presetId, ids, DEFAULTS.presetId),
+      presets:  s.presets,
+      fitToSize: !!s.fitToSize,
+      targetMB: num(s.targetMB, 'targetMB', DEFAULTS.targetMB),
+      rotate:   oneOf(String(s.rotate), ROTATES, DEFAULTS.rotate),
+      fade:     num(s.fade, 'fade', DEFAULTS.fade),
+      textPos:  oneOf(s.textPos, CORNERS, DEFAULTS.textPos),
+      textSize: Math.round(num(s.textSize, 'textSize', DEFAULTS.textSize)),
+      textPad:  Math.round(num(s.textPad,  'textPad',  DEFAULTS.textPad)),
+      logoPos:  oneOf(s.logoPos, CORNERS, DEFAULTS.logoPos),
+      logoScale:Math.round(num(s.logoScale,'logoScale',DEFAULTS.logoScale)),
+      logoPad:  Math.round(num(s.logoPad,  'logoPad',  DEFAULTS.logoPad))
+    };
+  }
+
   function load() {
     var s = {}, k;
     for (k in DEFAULTS) if (Object.prototype.hasOwnProperty.call(DEFAULTS, k)) s[k] = DEFAULTS[k];
     try {
       var raw = JSON.parse(localStorage.getItem(LS) || 'null');
-      if (raw && typeof raw === 'object') {
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
         for (k in raw) if (Object.prototype.hasOwnProperty.call(s, k)) s[k] = raw[k];
       }
     } catch (e) {}
-    s.presets = mergePresets(s.presets);
-    return s;
+    var out = clean(s);
+    out.presets = mergePresets(s.presets);
+    return out;
   }
 
   function save(s) {
@@ -66,12 +127,11 @@ window.ClipBox = window.ClipBox || {};
   // 저장본이 오래돼 항목이 빠져 있어도 기본값으로 메운다.
   // 이름은 저장본을 믿지 않는다 — 언어가 바뀌면 기본값 쪽이 맞다.
   function mergePresets(saved) {
+    var list = Array.isArray(saved) ? saved : [];
     return BUILTIN.map(function (base) {
-      var hit = Array.isArray(saved) ? saved.filter(function (x) { return x && x.id === base.id; })[0] : null;
-      var out = {}, k;
-      for (k in base) if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
-      if (hit) for (k in hit) if (Object.prototype.hasOwnProperty.call(out, k) && k !== 'id' && k !== 'name') out[k] = hit[k];
-      return out;
+      var hit = null;
+      list.forEach(function (x) { if (!hit && x && typeof x === 'object' && x.id === base.id) hit = x; });
+      return cleanPreset(hit || base, base);
     });
   }
 
@@ -85,7 +145,7 @@ window.ClipBox = window.ClipBox || {};
 
   /** 프리셋 설명 — 지금 값에서 만든다. 기호만 써서 한·영 공통으로 읽힌다. */
   function describe(p) {
-    var f = FORMATS[p.format];
+    var f = FORMATS[p.format] || FORMATS.gif;
     return p.width + 'px · ' + p.fps + 'fps · ' + f.label +
       (p.maxBytes ? ' · ≤' + Math.round(p.maxBytes / 1024 / 1024) + 'MB' : '');
   }

@@ -35,7 +35,7 @@
         <i class="fa-solid fa-plus"></i><br>영상을 여기에 놓거나 눌러서 고릅니다
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv">
       </div>
-      <div class="hint" id="queueHint">MP4 · MOV · WEBM을 받습니다. 다시 놓으면 그 영상으로 바뀝니다.</div>
+      <div class="hint">MP4 · MOV · WEBM을 받습니다. 다시 놓으면 그 영상으로 바뀝니다.</div>
 
       <div class="saved" id="fileRow" hidden>
         <i class="fa-solid fa-film"></i>
@@ -59,7 +59,7 @@
   </section>
 
   <!-- ── 가운데: 미리보기 + 필름 ────────────────────── -->
-  <section class="pan pan-wide" id="panStage">
+  <section class="pan pan-wide">
     <div class="ph">
       <i class="fa-solid fa-clapperboard"></i><span id="stageName">미리보기</span>
       <span class="ph-meta num" id="stageDims"></span>
@@ -123,7 +123,7 @@
           <div class="summary">
             <div class="srow"><span class="sk">시작</span><span class="sv num" id="rIn">0:00.0</span></div>
             <div class="srow"><span class="sk">끝</span><span class="sv num" id="rOut">0:00.0</span></div>
-            <div class="srow"><span class="sk">길이</span><span class="sv num" id="rLen">0.0초</span></div>
+            <div class="srow"><span class="sk">길이</span><span class="sv num" id="rLen">—</span></div>
             <div class="srow"><span class="sk">예상</span><span class="sv num" id="rEst">—</span></div>
           </div>
           <div class="row" style="margin-top:8px">

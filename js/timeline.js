@@ -28,7 +28,7 @@ window.ClipBox = window.ClipBox || {};
   /** 초 단위 표기. 영어에서는 s 로 나갑니다. */
   function fmtSec(sec) {
     var n = sec.toFixed(1);
-    return ClipBox.i18n ? ClipBox.i18n.tf('{n}\ucd08', { n:n }) : n + '\ucd08';
+    return ClipBox.i18n ? ClipBox.i18n.tf('{n}초', { n:n }) : n + '초';
   }
 
   function fmtTime(t) {
