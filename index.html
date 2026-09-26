@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" data-db-app="clip-box" data-db-theme="light">
+<html lang="ko" data-db-app="clip-box">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11,13 +11,15 @@
 <meta property="og:title" content="클립박스 — 영상 자르기">
 <meta property="og:description" content="문서에 넣을 영상 구간을 잘라 GIF·WebP·MP4로 만드는 일을 이 브라우저 안에서 끝냅니다.">
 <meta property="og:url" content="https://dibrain.dev/clip-box/">
-<meta property="og:image" content="https://dibrain.dev/clip-box/assets/img/icon-512.png">
+<meta property="og:image" content="https://dibrain.dev/og-default.png">
 <link rel="icon" href="assets/img/favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="assets/img/icon.svg">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="클립박스">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f7f7f5">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="assets/fonts/pretendard.css">
 <link rel="stylesheet" href="css/all.min.css">
 <link rel="stylesheet" href="css/db-tokens.css">
@@ -98,7 +100,7 @@
       <div id="stageEmpty">
         <i class="fa-solid fa-shield-halved"></i>
         <p>영상은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
-        <span>왼쪽에 영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.</span>
+        <span>영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.</span>
       </div>
     </div>
 
@@ -148,7 +150,7 @@
             <button class="db" id="btnOut" disabled><i class="fa-solid fa-right-from-bracket"></i>여기를 끝으로</button>
           </div>
           <div class="hint">아래 필름에서 청록 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.</div>
-          <div class="hint">Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초 · 재생 중 I·O 로 시작·끝 잡기</div>
+          <div class="hint kbd-only">Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초 · 재생 중 I·O 로 시작·끝 잡기</div>
         </div>
 
         <div class="sec2">
@@ -159,7 +161,7 @@
 
       <!-- 2. 다듬기 -->
       <div class="tool" id="tool-trim" hidden>
-        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
+        <div class="hint needvideo">먼저 영상을 넣어 주세요.</div>
         <div class="pb-label">잘라내기</div>
         <button class="db" id="btnCrop" style="width:100%;justify-content:center" disabled><i class="fa-solid fa-crop-simple"></i>칸 그리기</button>
         <div class="row" id="cropTools" style="margin-top:6px" hidden>
@@ -256,7 +258,7 @@
 
       <!-- 3. 크기·용량 -->
       <div class="tool" id="tool-size" hidden>
-        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
+        <div class="hint needvideo">먼저 영상을 넣어 주세요.</div>
         <div class="pb-label">어디에 쓸 영상인가요</div>
         <div class="pickrow" id="presetPick"></div>
         <div class="namepv mono" id="presetPv">480px · 10fps · GIF</div>
@@ -334,7 +336,7 @@
 
       <!-- 4. 내보내기 -->
       <div class="tool" id="tool-out" hidden>
-        <div class="hint needvideo">왼쪽에 영상을 먼저 넣어 주세요.</div>
+        <div class="hint needvideo">먼저 영상을 넣어 주세요.</div>
         <div class="pb-label">결과</div>
         <div id="resList"></div>
         <div class="hint" id="resEmpty">만든 것이 여기에 쌓입니다. 아래 줄에서 이 구간 만들기를 누르세요.</div>

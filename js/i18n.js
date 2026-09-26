@@ -22,6 +22,7 @@ var GL_LANG = (function () {
   var nav = (navigator.language || navigator.userLanguage || 'ko');
   return nav.toLowerCase().indexOf('ko') === 0 ? 'ko' : 'en';
 })();
+document.documentElement.lang = GL_LANG;   // 화면 읽기·번역기·글꼴 고르기가 지금 언어를 알게
 
 var GL_I18N = {
   // ── 페이지 · 헤더 ──
@@ -59,11 +60,11 @@ var GL_I18N = {
 
   // ── 가운데 ──
   '미리보기': 'Preview',
-  '왼쪽에 영상을 먼저 넣어 주세요.': 'Add a video on the left first.',
+  '먼저 영상을 넣어 주세요.': 'Add a video first.',
   '영상은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.':
     'Your video is processed in this browser only and is never sent anywhere.',
-  '왼쪽에 영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.':
-    'Add a video on the left → pick the part on the filmstrip below → press make. That is all.',
+  '영상을 넣고 → 아래 필름에서 자를 곳을 고르고 → 만들기를 누르면 끝입니다.':
+    'Add a video → pick the part on the filmstrip below → press make. That is all.',
   '끌면 길이를 유지한 채 구간이 통째로 움직입니다': 'Drag to move the whole range without changing its length',
 
   // ── 1. 구간 고르기 ──
@@ -269,6 +270,7 @@ function localizeDOM(root) {
 }
 
 // ── 언어 토글 버튼 (상단 바 맨 오른쪽) ──
+// 세 앱(AI 샷 · 클립박스 · 스냅박스) 공통: 버튼에는 바꿀 언어를 쓴다 — 한국어 화면이면 'EN', 영어 화면이면 '한'.
 function setLanguage(v) {
   try { localStorage.setItem('clip-box:language', v); } catch (e) {}
   location.reload();
@@ -285,6 +287,8 @@ function mountLangToggle() {
   b.type = 'button';
   b.textContent = toKo ? '한' : 'EN';
   b.title = '한국어 / English';
+  b.setAttribute('aria-label', toKo ? '한국어로 보기' : 'View in English');
+  b.lang = toKo ? 'ko' : 'en';
   b.addEventListener('click', function () { setLanguage(toKo ? 'ko' : 'en'); });
   bar.appendChild(b);
 }

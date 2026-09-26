@@ -136,9 +136,9 @@
 .res .rv.noplay span{font-size:11px;color:var(--ink3);font-weight:600;line-height:1.6}
 
 /* ── .saved 한 줄 안의 것들 ────────────────────────────── */
-/* .saved 는 tool.css 부품이다. 그 줄에 들어가는 버튼은 줄 높이(6px 9px)를 넘지
-   않게 한 단계 작게 쓴다. */
-.saved .db{padding:3px 8px;font-size:11px;flex-shrink:0}
+/* .saved 는 tool.css 부품이다. 그 줄에 들어가는 버튼은 글자만 한 단계 작게 쓰고,
+   높이는 다른 버튼처럼 44px(누르는 곳 최소)을 지킨다. */
+.saved .db{padding:3px 10px;font-size:11px;flex-shrink:0}
 
 /* 왼쪽: 넣은 영상 한 줄.
    영상은 담아 둔 구간과 다른 것이므로 구간 목록 위에 따로 두고,
