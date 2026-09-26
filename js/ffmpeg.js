@@ -30,7 +30,9 @@ window.ClipBox = window.ClipBox || {};
   var CORE_WASM_SIZE = 32232419;
   var CORE_WASM_SHA256 = '9f57947a5bd530d8f00c5b3f2cb2a3492faa7e5d823315342d6a8656d0a6b7b7';
   var FONT_URL  = base('vendor/fonts/Pretendard-Bold.ttf');
-  var CACHE_NAME = 'clipbox-core-' + CORE_VERSION;
+  // 같은 출처(dibrain.dev)의 다른 앱과 섞이지 않게 앱 이름으로 시작한다.
+  // 예전 이름 'clipbox-core-*' 는 records.js 가 지운다(새 이름으로 한 번 다시 받는다).
+  var CACHE_NAME = 'clip-box-core-' + CORE_VERSION;
 
   var FILES = { font:'font.ttf', text:'text.txt', logo:'logo.png', palette:'palette.png' };
 

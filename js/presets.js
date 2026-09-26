@@ -2,7 +2,7 @@
 // presets.js — 출력 프리셋 · 예상 용량 · 목표 용량 맞추기
 // ═══════════════════════════════════════════════════════════
 // classic script + 전역 네임스페이스(window.ClipBox).
-// 저장 키는 `clipbox.settings` 하나. 영상 데이터는 어떤 형태로도 저장하지 않는다.
+// 저장 키는 `clip-box:settings` 하나(예전 `clipbox.settings` 는 records.js 가 옮긴다). 영상 데이터는 어떤 형태로도 저장하지 않는다.
 //
 // 저장본은 믿지 않는다. 옛 버전이 남겼거나 손으로 고친 값이 들어와도
 // 화면이 깨지지 않게, 읽는 이 자리에서 한 번에 정리한다(clean 아래).
@@ -12,7 +12,7 @@ window.ClipBox = window.ClipBox || {};
 (function () {
   'use strict';
 
-  var LS = 'clipbox.settings';
+  var LS = 'clip-box:settings';
 
   // ── 포맷별 성질 ──
   var FORMATS = {

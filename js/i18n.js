@@ -5,7 +5,8 @@
 //  · 한국어 원문을 그대로 '키' 로 쓴다 → 사전에 없으면 한국어가 그대로 나오므로
 //    번역이 빠져도 화면이 깨지지 않는다.
 //  · HTML 은 손대지 않는다. 페이지가 뜨면 DOM 을 훑어서 텍스트를 바꾼다.
-//  · 언어 설정은 localStorage 키 'language' 에 둔다 (ko | en).
+//  · 언어 설정은 localStorage 키 'clip-box:language' 에 둔다 (ko | en).
+//    dibrain.dev 의 다른 앱과 같은 출처라 앱 이름으로 시작한다. 옛 'language' 는 records.js 가 옮긴다.
 //  · 사용자가 적은 자막 문구·파일 이름은 사전에 없으므로 번역되지 않는다 (의도된 동작).
 //
 // 주의: 번역할 문장 안에 <span> 같은 인라인 요소를 넣지 말 것.
@@ -15,7 +16,7 @@ window.ClipBox = window.ClipBox || {};
 
 var GL_LANG = (function () {
   try {
-    var saved = localStorage.getItem('language');
+    var saved = localStorage.getItem('clip-box:language');
     if (saved === 'ko' || saved === 'en') return saved;
   } catch (e) {}
   var nav = (navigator.language || navigator.userLanguage || 'ko');
@@ -214,7 +215,13 @@ var GL_I18N = {
     'The {n} saved range(s) go too. Switch to the other video?',
   '{name} 을(를) 뺄까요?': 'Remove {name}?',
   '{n}초': '{n}s',
-  '{n} / {total} MB': '{n} / {total} MB'
+  '{n} / {total} MB': '{n} / {total} MB',
+
+  // ── 기록 전체 삭제 (맨 아래 줄, records.js) ──
+  '기록은 이 기기에만 저장됩니다. 설정 · 내려받아 둔 영상 엔진': 'Saved only on this device. Settings · downloaded video engine',
+  '기록 전체 삭제': 'Delete all records',
+  '이 앱에 저장된 기록을 모두 지웁니다(설정·프리셋·언어, 내려받아 둔 영상 엔진 — 다시 열면 32MB를 새로 받습니다). 되돌릴 수 없습니다. 계속할까요?':
+    'This deletes everything Clip Box saved on this device (settings, presets, language, and the downloaded video engine — it will download 32 MB again next time). This cannot be undone. Continue?'
 };
 
 // 한국어 원문 → 현재 언어. 사전에 없으면 원문 그대로.
@@ -263,7 +270,7 @@ function localizeDOM(root) {
 
 // ── 언어 토글 버튼 (상단 바 맨 오른쪽) ──
 function setLanguage(v) {
-  try { localStorage.setItem('language', v); } catch (e) {}
+  try { localStorage.setItem('clip-box:language', v); } catch (e) {}
   location.reload();
 }
 
