@@ -24,7 +24,8 @@ var GL_LANG = (function () {
 
 var GL_I18N = {
   // ── 페이지 · 헤더 ──
-  'clip-box — 영상 자르기': 'clip-box — Video trim',
+  '클립박스 — 영상 자르기': 'Clip Box — Video trim',
+  '클립박스': 'Clip Box',
   '시연 영상 자르기': 'Demo video trim',
   '준비 중…': 'Getting ready…',
   '준비 완료': 'Ready',

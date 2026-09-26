@@ -1,7 +1,7 @@
 {
   "id": "/clip-box/",
-  "name": "clip-box",
-  "short_name": "clip-box",
+  "name": "클립박스",
+  "short_name": "클립박스",
   "description": "시연 영상에서 짧은 구간을 잘라 GIF · WebP · MP4 로 만듭니다. 영상은 브라우저 밖으로 나가지 않습니다.",
   "lang": "ko",
   "start_url": "./",
