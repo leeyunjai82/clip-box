@@ -2,7 +2,7 @@
 
 시연 영상에서 짧은 구간을 잘라 **문서·README·SNS용 GIF · WebP · MP4** 로 만듭니다.
 
-### → [clip-box 열기](https://leeyunjai82.github.io/clip-box/)
+### → [clip-box 열기](https://dibrain.dev/clip-box/)
 
 설치 없이 바로 씁니다. 데스크톱 Chrome · Edge 기준입니다.
 
@@ -17,7 +17,8 @@
 - 마지막으로 쓴 **설정값만 기억하고, 영상은 어떤 형태로도 저장하지 않습니다.**
   새로고침하면 사라집니다.
 - 소리는 넣지 않습니다. GIF 는 물론 MP4 도 **무음**으로 나옵니다.
-- 처음 한 번만 32MB 짜리 코어를 읽습니다. 그다음부터는 브라우저 캐시에서 바로 뜹니다.
+- 처음 한 번만 32MB 짜리 코어를 같은 사이트에서 읽습니다(두 조각으로 나눠 받아 이어 붙입니다).
+  그다음부터는 브라우저 캐시에서 바로 뜹니다. 바깥 사이트로 가는 요청은 없습니다.
 
 ## 쓰는 순서
 
@@ -27,7 +28,7 @@
 **만드는 것은 언제나 원본입니다.**
 
 - **1 구간 고르기** — `3초 · 5초 · 10초 · 전체` 중 하나를 누르면 그만큼 잡힙니다.
-  더 정확히는 필름에서 파란 손잡이를 끌거나, 재생 중에 `I`·`O` 키로 잡습니다.
+  더 정확히는 필름에서 청록 손잡이를 끌거나, 재생 중에 `I`·`O` 키로 잡습니다.
   구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다
 - **2 다듬기** — **칸 그리기**를 켜면 영상 위를 끌어 잘라낼 칸을 그립니다(비율 고정).
   끄면 원본 그대로 나갑니다. 배속 · 역재생 · 핑퐁도 여기.
@@ -69,7 +70,7 @@
 | [Font Awesome Free](https://fontawesome.com/) | 6.2.0 | CC BY 4.0 · SIL OFL 1.1 · MIT |
 
 자막용 `Pretendard-Bold.ttf` 는 ffmpeg 의 `drawtext` 에 넘기려고 따로 담았습니다.
-서비스 마크는 자체 제작입니다.
+아이콘과 상단 바의 마크는 DigitalBrain 브랜드 키트에서 가져왔습니다.
 
 **코어가 GPL 이므로 이 저장소 전체를 [GPL-2.0-or-later](LICENSE) 로 냅니다.**
 `@ffmpeg/core` 는 `--enable-gpl` 로 빌드된 배포본입니다 (LGPL 아님).
@@ -77,7 +78,7 @@
 ### 멀티스레드를 안 쓰는 이유
 
 `core-mt` 는 `SharedArrayBuffer` 가 있어야 하고, 그러려면 `COOP`·`COEP` 헤더를 서버가
-보내 줘야 합니다. GitHub Pages 는 헤더를 못 바꿉니다. 그래서 싱글스레드 코어만 씁니다.
+보내 줘야 합니다. 헤더 없이 어느 정적 호스팅에서나 돌도록 싱글스레드 코어만 씁니다.
 대신 wasm 이 한 번 메모리 트랩을 내면 그 인스턴스는 못 살리므로,
 `exec` 을 여덟 번 부를 때마다 워커를 새로 띄웁니다.
 
@@ -91,14 +92,24 @@ Chrome 이 `file://` 오리진의 `fetch` 를 막아 wasm 코어를 못 읽습�
 python3 -m http.server 8080
 ```
 
+### wasm 코어를 두 조각으로 나눈 이유
+
+정적 호스팅은 파일 하나를 25MiB 까지만 받습니다. `ffmpeg-core.0.12.10.wasm`(32,232,419 바이트)은
+그보다 커서 `vendor/ffmpeg-core/` 에 `.wasm.part1` · `.wasm.part2` 두 조각으로 나눠 두었습니다.
+`js/ffmpeg.js` 가 둘을 차례로 받아 이어 붙이고, 크기와 SHA-256 이 원본과 같은지 확인한 뒤
+`application/wasm` blob URL 로 `ffmpeg.load({ wasmURL })` 에 넘깁니다.
+코어를 바꿀 때는 새 wasm 을 같은 방식으로 나누고 `CORE_WASM_SIZE` · `CORE_WASM_SHA256` 을 고칩니다.
+
+```
+head -c 16116210 ffmpeg-core.0.12.10.wasm > ffmpeg-core.0.12.10.wasm.part1
+tail -c +16116211 ffmpeg-core.0.12.10.wasm > ffmpeg-core.0.12.10.wasm.part2
+```
+
 ### 디자인
 
-**업무 도구 킷**(`css/maker-tool.css`)입니다. 자매 서비스인
-[snap-box](https://github.com/leeyunjai82/snap-box) 와 같은 킷을 씁니다.
-기준은 [`design/README.md`](design/README.md), 컴포넌트 실물은
-[`design/preview.html`](design/preview.html).
-
-킷은 고치지 않습니다. clip-box 전용 CSS 는 `css/app.css` 한 곳에만 씁니다.
-화면 문자열도 `js/i18n.js` 한 곳에만 둡니다 — 한국어 원문이 그대로 키입니다.
+색·글꼴·상단 바는 DigitalBrain 공통 토큰(`css/db-tokens.css`, 원본을 그대로 복사)을 씁니다.
+`<html data-db-app="clip-box" data-db-theme="light">` 로 앱 강조색(청록)과 밝기를 정합니다.
+화면 부품은 `css/tool.css`, clip-box 에만 있는 것(필름 · 크롭 칸 · 결과 카드)은 `css/app.css` 에 둡니다.
+화면 문자열은 `js/i18n.js` 한 곳에만 둡니다 — 한국어 원문이 그대로 키입니다.
 
 </details>

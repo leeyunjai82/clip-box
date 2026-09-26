@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════
-// 다국어 (한국어 / English) — sense-lab lib/i18n.js 와 같은 방식
+// 다국어 (한국어 / English)
 // ═══════════════════════════════════════════════════════════
-// 설계 (sense-lab · 파이보 랩과 동일)
+// 설계
 //  · 한국어 원문을 그대로 '키' 로 쓴다 → 사전에 없으면 한국어가 그대로 나오므로
 //    번역이 빠져도 화면이 깨지지 않는다.
 //  · HTML 은 손대지 않는다. 페이지가 뜨면 DOM 을 훑어서 텍스트를 바꾼다.
-//  · 언어 설정은 같은 localStorage 키 'language' 를 쓴다.
+//  · 언어 설정은 localStorage 키 'language' 에 둔다 (ko | en).
 //  · 사용자가 적은 자막 문구·파일 이름은 사전에 없으므로 번역되지 않는다 (의도된 동작).
 //
 // 주의: 번역할 문장 안에 <span> 같은 인라인 요소를 넣지 말 것.
@@ -74,8 +74,8 @@ var GL_I18N = {
   '예상': 'Approx.',
   '여기를 시작으로': 'Set in point',
   '여기를 끝으로': 'Set out point',
-  '아래 필름에서 파란 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.':
-    'You can also drag the blue handles on the filmstrip. Dragging inside the range moves it without changing its length.',
+  '아래 필름에서 청록 손잡이를 끌어도 됩니다. 구간 안쪽을 끌면 길이를 유지한 채 통째로 옮겨집니다.':
+    'You can also drag the teal handles on the filmstrip. Dragging inside the range moves it without changing its length.',
   '재생 · 멈춤 (Space)': 'Play / pause (Space)',
   'Space 재생·멈춤 · ←→ 한 프레임 · Shift+←→ 1초 · 재생 중 I·O 로 시작·끝 잡기':
     'Space play/pause · ←→ one frame · Shift+←→ 1s · press I and O while playing to set in/out',
@@ -108,7 +108,7 @@ var GL_I18N = {
   '회전은 대개 자동으로 맞습니다. 폰 영상이 옆으로 누워 나올 때만 직접 고릅니다.':
     'Rotation is usually handled automatically. Pick one only if a phone video comes out sideways.',
   '글자 한 줄': 'One line of text',
-  '예: 파이보가 인사합니다': 'e.g. PIBO says hello',
+  '예: 여기서 버튼을 누릅니다': 'e.g. Press the button here',
   '왼위': 'T-L', '오른위': 'T-R', '왼아래': 'B-L', '오른아래': 'B-R',
   '글자': 'Text',
   '여백': 'Margin',
@@ -175,8 +175,8 @@ var GL_I18N = {
   '다시 만드는 중입니다': 'Making it again',
   '묶는 중입니다': 'Zipping',
   '그만뒀습니다': 'Stopped',
-  '아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요':
-    'Drag the blue handles on the filmstrip below to pick the part you want',
+  '아래 필름에서 청록 손잡이를 끌어 자를 곳을 고르세요':
+    'Drag the teal handles on the filmstrip below to pick the part you want',
   '영상 파일이 아닙니다': 'That is not a video file',
   '빈 파일입니다': 'That file is empty',
   '이 파일에는 영상이 없습니다 (소리만 들어 있습니다)': 'There is no video in that file (audio only)',
@@ -232,7 +232,7 @@ function GL_TF(ko, vars) {
   });
 }
 
-// ── 화면(HTML) 자동 번역 — sense-lab 과 동일 ──
+// ── 화면(HTML) 자동 번역 ──
 function localizeDOM(root) {
   if (GL_LANG === 'ko') return;
   var scope = root || document.body;
@@ -260,19 +260,20 @@ function localizeDOM(root) {
     document.title = GL_I18N[document.title.trim()];
 }
 
-// ── 언어 토글 버튼 (sense-lab 과 같은 버튼·위치·저장 키) ──
+// ── 언어 토글 버튼 (상단 바 맨 오른쪽) ──
 function setLanguage(v) {
   try { localStorage.setItem('language', v); } catch (e) {}
   location.reload();
 }
 
 function mountLangToggle() {
-  var bar = document.querySelector('header');
+  var bar = document.querySelector('header.db-bar');
   if (!bar || document.getElementById('langToggle')) return;
 
   var toKo = (GL_LANG !== 'ko');
   var b = document.createElement('button');
   b.id = 'langToggle';
+  b.className = 'db-btn';
   b.type = 'button';
   b.textContent = toKo ? '한' : 'EN';
   b.title = '한국어 / English';

@@ -1,12 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════
-   clip-box 전용 스타일 — css/maker-tool.css 뒤에 얹는다
+   clip-box 전용 스타일 — css/db-tokens.css · css/tool.css 뒤에 얹는다
    ═══════════════════════════════════════════════════════════════════
-   규칙 (design/README.md):
-     · 새 색·새 폰트를 만들지 않는다. 킷의 토큰만 쓴다.
-     · 킷에 있는 것(.db .inp .pan .hint .sec2 .prg .badge .dropzone
+   규칙:
+     · 새 색·새 폰트를 만들지 않는다. tool.css 의 이름(=공통 토큰)만 쓴다.
+     · tool.css 에 있는 것(.db .inp .pan .hint .sec2 .prg .badge .dropzone
        .rangerow .fieldrow .pickrow .filebtn .summary .namepv .mk-bar …)을
-       먼저 찾아 쓰고, clip-box 에만 있는 것만 여기에 만든다.
-     · 자매 서비스도 쓸 만한 것이 생기면 킷(css/maker-tool.css)으로 옮긴다.
+       먼저 찾아 쓰고, 여기에는 영상 화면에만 필요한 것만 만든다.
 
    여기 남은 것: 담아 둔 구간 줄 · 미리보기 무대 · 필름(타임라인) · 크롭 칸 · 결과 카드.
    전부 "영상을 다루는 서비스" 에만 필요한 것들이다.
@@ -68,7 +67,7 @@
 #cropBox .ch.s{left:50%;bottom:-6px;margin-left:-5.5px;cursor:ns-resize}
 #cropBox .ch.w{top:50%;left:-6px;margin-top:-5.5px;cursor:ew-resize}
 #cropBox .ch.e{top:50%;right:-6px;margin-top:-5.5px;cursor:ew-resize}
-.cropsz{position:absolute;left:0;top:-19px;background:var(--acc);color:#fff;
+.cropsz{position:absolute;left:0;top:-19px;background:var(--acc-bg);color:var(--on-acc);
   font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--r-s);
   white-space:nowrap;line-height:1.6}
 
@@ -83,9 +82,9 @@
 .tl-dim{position:absolute;top:0;bottom:0;background:rgba(28,32,36,.52);pointer-events:none}
 #tlSel{position:absolute;top:0;bottom:0;cursor:grab;
   border-top:2px solid var(--acc);border-bottom:2px solid var(--acc);
-  background:rgba(31,95,122,.10)}
+  background:color-mix(in srgb, var(--acc) 10%, transparent)}
 #tlSel:active{cursor:grabbing}
-#tlSel.moving{background:rgba(31,95,122,.2)}
+#tlSel.moving{background:color-mix(in srgb, var(--acc) 20%, transparent)}
 .tl-hand{position:absolute;top:0;bottom:0;width:15px;margin-left:-7.5px;cursor:ew-resize;z-index:3}
 .tl-hand i{position:absolute;left:3.5px;top:0;bottom:0;width:8px;background:var(--acc);
   border-radius:3px;border:1px solid #fff}
@@ -97,7 +96,7 @@
   background:var(--warn);pointer-events:none;z-index:4}
 
 .tl-len{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  background:var(--acc);color:#fff;font-size:10px;font-weight:700;
+  background:var(--acc-bg);color:var(--on-acc);font-size:10px;font-weight:700;
   padding:1px 7px;border-radius:var(--r-s);white-space:nowrap;
   pointer-events:none;z-index:2;box-shadow:0 0 0 1px rgba(255,255,255,.55)}
 
@@ -109,38 +108,36 @@
 #tlRuler .tk.edge{transform:none}
 #tlRuler .tk.edge.r{transform:translateX(-100%)}
 
-#tlTip{position:absolute;top:-5px;background:var(--acc);color:#fff;font-size:10px;font-weight:700;
+#tlTip{position:absolute;top:-5px;background:var(--acc-bg);color:var(--on-acc);font-size:10px;font-weight:700;
   padding:1px 6px;border-radius:var(--r-s);transform:translateX(-50%);
   pointer-events:none;z-index:5;white-space:nowrap}
 
 /* ── 오른쪽: `자세히` 접기 ─────────────────────────────── */
-/* 새 부품이 아니라 킷의 .db 를 한 줄짜리 여닫개로 쓴 것이다.
+/* 새 부품이 아니라 tool.css 의 .db 를 한 줄짜리 여닫개로 쓴 것이다.
    자주 쓰는 것만 펼쳐 두고 나머지를 여기에 접어, 첫 화면을 짧게 한다. */
 .db.fold{width:100%;justify-content:flex-start;color:var(--ink3);font-size:11.5px}
 .db.fold i{width:10px;transition:transform .12s}
 .db.fold.on i{transform:rotate(90deg)}
 
 /* ── 키보드로 옮겨 다닐 때 지금 어디인지 ───────────────── */
-/* 킷에는 .inp:focus 만 있어 버튼·탭은 Tab 으로 옮겨도 표시가 없었다.
-   자매 서비스에도 똑같이 필요하므로 킷으로 옮길 후보다.
+/* tool.css 에는 .inp:focus 만 있어 버튼·탭은 Tab 으로 옮겨도 표시가 없었다.
+   다른 화면에도 필요하면 tool.css 로 옮긴다.
    :focus-visible 이라 마우스로 누를 때는 나오지 않는다. */
 .db:focus-visible,
 .tabbar .tab:focus-visible,
 .filebtn:focus-visible,
 .dropzone:focus-visible,
 .qitem:focus-visible,
-#langToggle:focus-visible,
-.hbtn:focus-visible,
 .res .rb .db:focus-visible{outline:2px solid var(--acc);outline-offset:2px;
-  transition:none}                 /* 킷의 transition:all 을 타면 테두리가 뒤늦게 떠오른다 */
+  transition:none}                 /* tool.css 의 transition:all 을 타면 테두리가 뒤늦게 떠오른다 */
 
 /* ── 결과: 이 브라우저가 못 푸는 형식 ──────────────────── */
 .res .rv.noplay{min-height:84px;padding:14px 12px;text-align:center}
 .res .rv.noplay span{font-size:11px;color:var(--ink3);font-weight:600;line-height:1.6}
 
 /* ── .saved 한 줄 안의 것들 ────────────────────────────── */
-/* .saved 는 킷 부품이다. 그 줄에 들어가는 버튼은 줄 높이(6px 9px)를 넘지
-   않게 한 단계 작게 쓴다. 자매 서비스도 같은 일이 생기면 킷으로 옮긴다. */
+/* .saved 는 tool.css 부품이다. 그 줄에 들어가는 버튼은 줄 높이(6px 9px)를 넘지
+   않게 한 단계 작게 쓴다. */
 .saved .db{padding:3px 8px;font-size:11px;flex-shrink:0}
 
 /* 왼쪽: 넣은 영상 한 줄.

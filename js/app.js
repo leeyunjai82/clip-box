@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // app.js — 상태 · 영상 불러오기 · 담아 둔 구간 · 작업 탭 · 만들기
 // ═══════════════════════════════════════════════════════════
-// 1원칙 (design/README.md §7): 영상은 브라우저 밖으로 나가지 않습니다.
+// 1원칙: 영상은 브라우저 밖으로 나가지 않습니다.
 // 이 파일에는 바깥을 부르는 코드가 한 줄도 없습니다
 // (vendor/ 아래 코어·글꼴만 같은 출처에서 읽습니다).
 //
@@ -128,7 +128,7 @@ window.ClipBox = window.ClipBox || {};
 
   function loadCore() {
     var badge = $('#coreState');
-    var engine = document.getElementById('engine');   // nav.js 가 헤더에 단 배지
+    var engine = document.getElementById('engine');   // 상단 바의 배지
     var MB = function (n) { return (n / 1024 / 1024).toFixed(1); };
     function setState(txt, ok) {
       badge.textContent = txt;
@@ -161,7 +161,7 @@ window.ClipBox = window.ClipBox || {};
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 작업 탭 — .tabbar 가 곧 오른쪽 패널의 탭입니다 (design/README.md §3)
+  // 작업 탭 — .tabbar 가 곧 오른쪽 패널의 탭입니다
   // ═══════════════════════════════════════════════════════════
   var STEP_META = {
     range: { icon:'fa-scissors',      title:'구간 고르기' },
@@ -347,7 +347,7 @@ window.ClipBox = window.ClipBox || {};
         toast(T('이 브라우저가 못 읽는 코덱이라 미리보기용 영상을 만들었습니다. 만드는 것은 언제나 원본입니다'));
       } else if (!S.toldHowToPick) {
         S.toldHowToPick = true;
-        toast(T('아래 필름에서 파란 손잡이를 끌어 자를 곳을 고르세요'));
+        toast(T('아래 필름에서 청록 손잡이를 끌어 자를 곳을 고르세요'));
       }
     }).catch(function (e) {
       toast(T(/NOVIDEO/.test(String(e && e.message)) ? '이 파일에는 영상이 없습니다 (소리만 들어 있습니다)'
@@ -698,7 +698,7 @@ window.ClipBox = window.ClipBox || {};
     updateEstimate();
   }
 
-  /** 지금 할 수 있는 것만 열어 둡니다 (design/README.md §3) */
+  /** 지금 할 수 있는 것만 열어 둡니다 */
   function refreshEnabled() {
     var hasVideo = !!S.file && TL.duration > 0;
     var ready = S.coreReady && hasVideo && !S.busy;
@@ -881,7 +881,7 @@ window.ClipBox = window.ClipBox || {};
     $('#btnRunAll').addEventListener('click', function () { runBatch(S.clips.slice()); });
     $('#btnCancel').addEventListener('click', cancel);
 
-    // 되돌릴 수 없는 동작은 한 번 묻습니다 (design/README.md §3)
+    // 되돌릴 수 없는 동작은 한 번 묻습니다
     $('#btnClearQueue').addEventListener('click', function () {
       if (!S.clips.length) return;
       if (!confirm(T('목록을 모두 비울까요?'))) return;

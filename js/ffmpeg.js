@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════
 // ffmpeg.js — 코어 불러오기 · 명령 조립 · 진행률 · 그만두기
 // ═══════════════════════════════════════════════════════════
-// · 싱글스레드 코어(@ffmpeg/core)만 씁니다. GitHub Pages 는 COOP/COEP 헤더를
-//   줄 수 없어 SharedArrayBuffer(=core-mt)가 동작하지 않습니다.
+// · 싱글스레드 코어(@ffmpeg/core)만 씁니다. SharedArrayBuffer(=core-mt)가 필요 없어
+//   COOP/COEP 헤더 없이 어느 정적 호스팅에서나 돕니다.
 // · 코어·라이브러리는 vendor/ 에 셀프호스팅합니다. 실행 중 외부 요청은 0개입니다.
+// · wasm 코어(32,232,419 바이트)는 정적 호스팅의 파일 하나 25MiB 제한 때문에
+//   .part1 · .part2 두 조각으로 나눠 두었습니다. 같은 출처에서 차례로 받아 이어 붙이고,
+//   크기와 SHA-256 을 확인한 뒤 blob URL 로 넘깁니다.
 // · classic script 안에서 ESM 인 @ffmpeg/ffmpeg 를 쓰므로 동적 import() 를 씁니다.
-//   design/README.md §6: 경로는 new URL(..., document.baseURI) 로 문서 기준으로 풉니다.
+//   경로는 new URL(..., document.baseURI) 로 문서 기준으로 풉니다.
 //   ('./vendor/...' 라고 적으면 이 스크립트 파일 기준으로 풀려 404 가 납니다.)
 // · 인스턴스는 하나만 두고 재사용합니다. 그만두기는 terminate() 뒤 다시 불러오기.
 
@@ -19,13 +22,19 @@ window.ClipBox = window.ClipBox || {};
 
   // Cache-Control 을 손댈 수 없으므로 파일 이름에 버전을 박아 둡니다.
   var CORE_JS   = base('vendor/ffmpeg-core/ffmpeg-core.' + CORE_VERSION + '.js');
-  var CORE_WASM = base('vendor/ffmpeg-core/ffmpeg-core.' + CORE_VERSION + '.wasm');
+  var CORE_WASM_PARTS = [
+    base('vendor/ffmpeg-core/ffmpeg-core.' + CORE_VERSION + '.wasm.part1'),
+    base('vendor/ffmpeg-core/ffmpeg-core.' + CORE_VERSION + '.wasm.part2')
+  ];
+  // 이어 붙인 결과가 원본 ffmpeg-core.0.12.10.wasm 과 같은지 확인하는 값
+  var CORE_WASM_SIZE = 32232419;
+  var CORE_WASM_SHA256 = '9f57947a5bd530d8f00c5b3f2cb2a3492faa7e5d823315342d6a8656d0a6b7b7';
   var FONT_URL  = base('vendor/fonts/Pretendard-Bold.ttf');
   var CACHE_NAME = 'clipbox-core-' + CORE_VERSION;
 
   var FILES = { font:'font.ttf', text:'text.txt', logo:'logo.png', palette:'palette.png' };
 
-  var ffmpeg = null, loadPromise = null, coreBlobs = null, fontBytes = null;
+  var ffmpeg = null, loadPromise = null, coreBlobs = null, fontBytes = null, coreCheck = null;
   var progressCb = null, logLines = [], terminated = false, execCount = 0;
 
   // ffmpeg.wasm 은 exec 를 되풀이하면 힙이 쌓입니다. 열댓 번쯤 이어 돌리면
@@ -46,7 +55,7 @@ window.ClipBox = window.ClipBox || {};
   function fetchCached(url, onBytes) {
     var cache = null;
     return Promise.resolve()
-      .then(function () { return caches.open(CACHE_NAME).catch(function () { return null; }); })
+      .then(function () { return window.caches ? caches.open(CACHE_NAME).catch(function () { return null; }) : null; })
       .then(function (c) {
         cache = c;
         return cache ? cache.match(url) : null;
@@ -95,9 +104,56 @@ window.ClipBox = window.ClipBox || {};
       });
   }
 
+  function hex(buf) {
+    return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+      return ('0' + b.toString(16)).slice(-2);
+    }).join('');
+  }
+
+  /**
+   * wasm 조각을 차례로 받아(각각 Cache Storage 에 보관) 하나로 이어 붙입니다.
+   * onBytes(지금까지 받은 바이트 합, 캐시에서 꺼냈는가)
+   * 크기나 SHA-256 이 원본과 다르면 캐시에 남은 조각을 지우고 실패합니다.
+   */
+  function fetchWasmParts(onBytes) {
+    var bufs = [], done = 0;
+    var chain = CORE_WASM_PARTS.reduce(function (p, url) {
+      return p.then(function () {
+        return fetchCached(url, function (got, total, hit) {
+          onBytes && onBytes(done + got, hit);
+        }).then(function (buf) {
+          bufs.push(buf);
+          done += buf.byteLength;
+        });
+      });
+    }, Promise.resolve());
+
+    return chain.then(function () {
+      if (done !== CORE_WASM_SIZE) throw new Error('코어 크기가 맞지 않습니다 (' + done + ' / ' + CORE_WASM_SIZE + ')');
+      var out = new Uint8Array(done), pos = 0;
+      bufs.forEach(function (b) { out.set(new Uint8Array(b), pos); pos += b.byteLength; });
+      bufs = null;
+      // crypto.subtle 은 보안 출처(https · localhost)에서만 있습니다. 없으면 크기 확인만 합니다.
+      var subtle = window.crypto && window.crypto.subtle;
+      coreCheck = { parts: CORE_WASM_PARTS.length, bytes: done, sha256: null };
+      if (!subtle) return out.buffer;
+      return subtle.digest('SHA-256', out).then(function (d) {
+        coreCheck.sha256 = hex(d);
+        if (coreCheck.sha256 !== CORE_WASM_SHA256) throw new Error('코어 파일이 손상되었습니다 (SHA-256 불일치)');
+        return out.buffer;
+      });
+    }).catch(function (e) {
+      // 잘못 받은 조각이 캐시에 남아 다음에도 실패하지 않게 비웁니다.
+      return Promise.resolve(window.caches ? caches.open(CACHE_NAME) : null).then(function (c) {
+        if (!c) return;
+        return Promise.all(CORE_WASM_PARTS.map(function (u) { return c.delete(u); }));
+      }).catch(function () {}).then(function () { throw e; });
+    });
+  }
+
   /**
    * 코어를 불러옵니다. onProgress({phase, loaded, total, cached})
-   * 첫 번째는 약 32MB, 두 번째부터는 캐시에서 바로.
+   * 첫 번째는 약 32MB(두 조각), 두 번째부터는 캐시에서 바로.
    */
   function loadCore(onProgress) {
     if (loadPromise) return loadPromise;
@@ -109,9 +165,9 @@ window.ClipBox = window.ClipBox || {};
         if (!hit) cached = false;
         onProgress && onProgress({ phase:'js', loaded:got, total:total, cached:hit });
       }).then(function (jsBuf) {
-        return fetchCached(CORE_WASM, function (got, total, hit) {
+        return fetchWasmParts(function (got, hit) {
           if (!hit) cached = false;
-          onProgress && onProgress({ phase:'wasm', loaded:got, total:total, cached:hit });
+          onProgress && onProgress({ phase:'wasm', loaded:got, total:CORE_WASM_SIZE, cached:hit });
         }).then(function (wasmBuf) {
           coreBlobs = {
             core: URL.createObjectURL(new Blob([jsBuf], { type:'text/javascript' })),
@@ -122,7 +178,7 @@ window.ClipBox = window.ClipBox || {};
       });
     }).then(function () {
       onProgress && onProgress({ phase:'init', cached: coreBlobs.cached });
-      // classic script 안에서 ESM 모듈을 불러옵니다 (design/README.md §6)
+      // classic script 안에서 ESM 모듈을 불러옵니다
       return import(base('vendor/ffmpeg/index.js'));
     }).then(function (mod) {
       ffmpeg = new mod.FFmpeg();
@@ -488,6 +544,7 @@ window.ClipBox = window.ClipBox || {};
     probeInput: probeInput, makeProxy: makeProxy,
     writeInput: writeInput, encodeClip: encodeClip,
     buildPasses: buildPasses, outSize: outSize, outDuration: outDuration,
-    recentLog: function () { return logLines.slice(); }
+    recentLog: function () { return logLines.slice(); },
+    coreCheck: function () { return coreCheck; }   // 이어 붙인 코어의 조각 수 · 크기 · SHA-256
   };
 })();
